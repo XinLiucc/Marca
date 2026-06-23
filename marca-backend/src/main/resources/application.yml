@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: marca
+  datasource:
+    url: jdbc:mysql://localhost:3306/marca?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+server:
+  port: 8080
+
+marca:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-please-use-at-least-32-chars}
+    expiration-days: 7
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    url-prefix: /uploads

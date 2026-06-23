@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --color-mint-50:  #f0fbf6;
+  --color-mint-100: #e1f5ee;
+  --color-mint-200: #c4ebdc;
+  --color-mint-300: #95d9be;
+  --color-mint-400: #5fc09b;
+  --color-mint-500: #1d9e75;
+  --color-mint-600: #178363;
+  --color-mint-700: #136951;
+}
+
+html, body, #app {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-mint-50);
+  color: #1f2937;
+}
