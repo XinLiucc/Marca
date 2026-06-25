@@ -1,0 +1,53 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { RecordDto } from '@/api/records'
+
+const props = defineProps<{
+  record: RecordDto
+  mode?: 'compact' | 'full'
+}>()
+
+const mode = computed(() => props.mode ?? 'compact')
+
+const categoryLabel: Record<string, string> = {
+  event: '事件',
+  emotion: '情绪',
+  future: '未来',
+}
+</script>
+
+<template>
+  <article class="rounded-3xl bg-white p-5 shadow-sm">
+    <header class="mb-3 flex items-baseline justify-between">
+      <p class="text-base font-medium text-mint-600">{{ record.recordDate }}</p>
+      <span class="text-xs text-gray-400">
+        {{ record.answers.length }} 道 · {{ record.voiceUrl ? '含语音' : '无语音' }}
+      </span>
+    </header>
+
+    <!-- compact：摘要 -->
+    <template v-if="mode === 'compact'">
+      <p
+        v-if="record.answers[0]"
+        class="line-clamp-2 text-sm leading-relaxed text-gray-600"
+      >
+        {{ record.answers[0].answer }}
+      </p>
+      <p v-else class="text-sm text-gray-400">（只有语音）</p>
+    </template>
+
+    <!-- full：所有问答展开 -->
+    <template v-else>
+      <ul class="space-y-3">
+        <li v-for="(a, i) in record.answers" :key="a.id ?? i" class="rounded-2xl bg-mint-50/50 p-3">
+          <div class="mb-1 flex items-center gap-2 text-xs text-mint-600">
+            <span class="rounded-full bg-mint-100 px-2 py-0.5">{{ a.category ? categoryLabel[a.category] : '—' }}</span>
+            <span class="text-gray-400">{{ a.question }}</span>
+          </div>
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ a.answer }}</p>
+        </li>
+      </ul>
+      <p v-if="!record.answers.length" class="text-sm text-gray-400">（这条记录只有语音）</p>
+    </template>
+  </article>
+</template>
