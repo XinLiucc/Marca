@@ -35,9 +35,23 @@ export interface RecordPage {
   items: RecordDto[]
 }
 
+export interface VoiceUploadResponse {
+  voiceUrl: string
+  duration: number | null
+  bytes: number
+}
+
 export const recordsApi = {
   save(payload: SaveRecordPayload) {
     return http.post<RecordDto>('/api/records', payload).then((r) => r.data)
+  },
+  uploadVoice(blob: Blob, duration: number) {
+    const form = new FormData()
+    const ext = blob.type.includes('webm') ? 'webm' : blob.type.includes('mp4') ? 'm4a' : 'audio'
+    form.append('file', blob, `voice.${ext}`)
+    return http
+      .post<VoiceUploadResponse>('/api/records/voice', form, { params: { duration } })
+      .then((r) => r.data)
   },
   today() {
     // 后端 204 时 axios.data 为空字符串 / undefined
