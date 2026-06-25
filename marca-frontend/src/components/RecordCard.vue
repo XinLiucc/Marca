@@ -38,7 +38,7 @@ const categoryLabel: Record<string, string> = {
 
     <!-- full：所有问答展开 -->
     <template v-else>
-      <ul class="space-y-3">
+      <ul v-if="record.answers.length" class="space-y-3">
         <li v-for="(a, i) in record.answers" :key="a.id ?? i" class="rounded-2xl bg-mint-50/50 p-3">
           <div class="mb-1 flex items-center gap-2 text-xs text-mint-600">
             <span class="rounded-full bg-mint-100 px-2 py-0.5">{{ a.category ? categoryLabel[a.category] : '—' }}</span>
@@ -47,7 +47,13 @@ const categoryLabel: Record<string, string> = {
           <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ a.answer }}</p>
         </li>
       </ul>
-      <p v-if="!record.answers.length" class="text-sm text-gray-400">（这条记录只有语音）</p>
+
+      <div v-if="record.voiceUrl" class="mt-3 rounded-2xl bg-mint-50/50 p-3">
+        <p class="mb-2 text-xs text-mint-600">语音</p>
+        <audio :src="record.voiceUrl" controls class="w-full" />
+      </div>
+
+      <p v-if="!record.answers.length && !record.voiceUrl" class="text-sm text-gray-400">（空记录）</p>
     </template>
   </article>
 </template>

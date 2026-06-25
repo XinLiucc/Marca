@@ -6,6 +6,7 @@ import { questionsApi, type Question } from '@/api/questions'
 import { recordsApi, type RecordDto } from '@/api/records'
 import QuestionCountPicker from '@/components/QuestionCountPicker.vue'
 import QuestionCard from '@/components/QuestionCard.vue'
+import VoiceRecorder from '@/components/VoiceRecorder.vue'
 
 type Mode = 'loading' | 'recorded' | 'editing' | 'error'
 
@@ -21,12 +22,18 @@ const questions = ref<Question[]>([])
 const answers = ref<Record<number, string>>({})
 const submitting = ref(false)
 
+// 编辑态的语音（已上传后的 url + duration）
+const voiceUrl = ref<string | null>(null)
+const voiceDuration = ref<number | null>(null)
+
 // 已记录态
 const todayRecord = ref<RecordDto | null>(null)
 
 const filledCount = computed(
   () => Object.values(answers.value).filter((v) => v && v.trim().length > 0).length,
 )
+
+const canSubmit = computed(() => filledCount.value > 0 || !!voiceUrl.value)
 
 onMounted(async () => {
   await loadToday()
@@ -58,9 +65,11 @@ async function loadQuestions() {
   answers.value = Object.fromEntries(res.questions.map((q) => [q.id, '']))
 }
 
-// 编辑态下切 count 重新出题
-watch(count, async () => {
+// 编辑态下切 count 重新出题；count 与当前题数相同则跳过
+// （enterEdit 里会程序化设置 count，需避免误触发把预填答案冲掉）
+watch(count, async (newCount) => {
   if (mode.value !== 'editing') return
+  if (newCount === questions.value.length) return
   await loadQuestions()
 })
 
@@ -76,13 +85,33 @@ function enterEdit() {
       todayRecord.value.answers.map((a) => [a.questionId ?? -1, a.answer]),
     )
     count.value = questions.value.length || 3
+    voiceUrl.value = todayRecord.value.voiceUrl
+    voiceDuration.value = todayRecord.value.voiceDuration
   }
   mode.value = 'editing'
 }
 
+function getAnswer(id: number): string {
+  return answers.value[id] ?? ''
+}
+
+function setAnswer(id: number, v: string) {
+  answers.value[id] = v
+}
+
+function onVoiceUploaded(payload: { voiceUrl: string; duration: number }) {
+  voiceUrl.value = payload.voiceUrl
+  voiceDuration.value = payload.duration
+}
+
+function onVoiceCleared() {
+  voiceUrl.value = null
+  voiceDuration.value = null
+}
+
 async function onSubmit() {
-  if (filledCount.value === 0) {
-    errorMsg.value = '至少回答一题，留空的会自动跳过'
+  if (!canSubmit.value) {
+    errorMsg.value = '至少答一题，或者录一段语音'
     return
   }
   errorMsg.value = null
@@ -99,6 +128,8 @@ async function onSubmit() {
           category: q.category,
           answer: text,
         })),
+      voiceUrl: voiceUrl.value,
+      voiceDuration: voiceDuration.value,
     }
     const saved = await recordsApi.save(payload)
     todayRecord.value = saved
@@ -151,6 +182,12 @@ async function onSubmit() {
           :model-value="a.answer"
           readonly
         />
+        <section v-if="todayRecord.voiceUrl" class="rounded-3xl bg-white p-5 shadow-sm">
+          <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
+            <span class="rounded-full bg-mint-100 px-2 py-0.5">语音</span>
+          </header>
+          <audio :src="todayRecord.voiceUrl" controls class="w-full" />
+        </section>
       </div>
       <button
         class="mt-6 w-full rounded-2xl bg-white py-3 text-sm font-medium text-mint-600 shadow-sm transition hover:bg-mint-50"
@@ -173,8 +210,15 @@ async function onSubmit() {
           :key="q.id"
           :question="q"
           :index="i"
-          :model-value="answers[q.id] ?? ''"
-          @update:model-value="(v) => (answers[q.id] = v)"
+          :model-value="getAnswer(q.id)"
+          @update:model-value="(v: string) => setAnswer(q.id, v)"
+        />
+
+        <VoiceRecorder
+          :initial-url="voiceUrl"
+          :initial-duration="voiceDuration"
+          @uploaded="onVoiceUploaded"
+          @cleared="onVoiceCleared"
         />
       </div>
 
@@ -182,11 +226,11 @@ async function onSubmit() {
 
       <button
         type="button"
-        :disabled="submitting || filledCount === 0"
+        :disabled="submitting || !canSubmit"
         class="mt-6 w-full rounded-2xl bg-mint-500 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-mint-600 disabled:bg-mint-300 disabled:opacity-70"
         @click="onSubmit"
       >
-        {{ submitting ? '保存中…' : `保存今日记录（已填 ${filledCount}/${questions.length}）` }}
+        {{ submitting ? '保存中…' : `保存今日记录（${filledCount} 题${voiceUrl ? ' + 语音' : ''}）` }}
       </button>
     </template>
   </main>
