@@ -3,8 +3,10 @@ package app.marca.controller;
 import app.marca.dto.RecordDto;
 import app.marca.dto.RecordPage;
 import app.marca.dto.SaveRecordRequest;
+import app.marca.dto.VoiceUploadResponse;
 import app.marca.security.UserPrincipal;
 import app.marca.service.RecordService;
+import app.marca.service.StorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +17,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -28,6 +32,17 @@ public class RecordController {
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
 
     private final RecordService recordService;
+    private final StorageService storageService;
+
+    @PostMapping(value = "/voice", consumes = "multipart/form-data")
+    public VoiceUploadResponse uploadVoice(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "duration", required = false) Integer duration
+    ) {
+        var stored = storageService.storeVoice(user.id(), file);
+        return new VoiceUploadResponse(stored.url(), duration, stored.bytes());
+    }
 
     @PostMapping
     public RecordDto save(
