@@ -10,13 +10,22 @@ export interface AnswerDto {
   sortOrder?: number
 }
 
+export interface ImageDto {
+  id?: number
+  url: string
+  width: number | null
+  height: number | null
+  bytes: number | null
+  sortOrder?: number
+}
+
 export interface RecordDto {
   id: number
   recordDate: string
   answers: AnswerDto[]
   voiceUrl: string | null
   voiceDuration: number | null
-  imageUrl: string | null
+  images: ImageDto[]
   createdAt: string | null
   updatedAt: string | null
 }
@@ -26,6 +35,7 @@ export interface SaveRecordPayload {
   answers: Omit<AnswerDto, 'id' | 'sortOrder'>[]
   voiceUrl?: string | null
   voiceDuration?: number | null
+  images?: Omit<ImageDto, 'id' | 'sortOrder'>[]
 }
 
 export interface RecordPage {
@@ -41,6 +51,13 @@ export interface VoiceUploadResponse {
   bytes: number
 }
 
+export interface ImageUploadResponse {
+  imageUrl: string
+  width: number | null
+  height: number | null
+  bytes: number
+}
+
 export const recordsApi = {
   save(payload: SaveRecordPayload) {
     return http.post<RecordDto>('/api/records', payload).then((r) => r.data)
@@ -51,6 +68,13 @@ export const recordsApi = {
     form.append('file', blob, `voice.${ext}`)
     return http
       .post<VoiceUploadResponse>('/api/records/voice', form, { params: { duration } })
+      .then((r) => r.data)
+  },
+  uploadImage(file: File) {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    return http
+      .post<ImageUploadResponse>('/api/records/image', form)
       .then((r) => r.data)
   },
   today() {
