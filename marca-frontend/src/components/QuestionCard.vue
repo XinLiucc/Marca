@@ -36,7 +36,7 @@ function onInput(e: Event) {
       :value="modelValue"
       rows="3"
       placeholder="想到什么就写什么，留空就跳过这题"
-      class="w-full resize-none rounded-2xl border border-gray-100 bg-mint-50/40 p-3 text-sm leading-relaxed outline-none focus:border-mint-300 focus:bg-white"
+      class="min-h-[88px] w-full resize-none rounded-2xl border border-mint-200 bg-mint-50 p-3 text-sm leading-relaxed text-gray-800 placeholder:text-mint-400 outline-none transition focus:border-mint-500 focus:bg-white focus:ring-2 focus:ring-mint-100"
       @input="onInput"
     />
     <p
