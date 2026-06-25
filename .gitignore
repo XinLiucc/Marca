@@ -1,0 +1,8 @@
+# 环境变量（含本地密码）不入版本库
+.env
+.env.local
+
+# 编辑器
+.vscode/
+.idea/
+*.swp

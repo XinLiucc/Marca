@@ -2,9 +2,11 @@ spring:
   application:
     name: marca
   datasource:
-    url: jdbc:mysql://localhost:3306/marca?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    # 默认指向 docker-compose 起的 MySQL（host 3307），可由 DB_URL 覆盖
+    # allowPublicKeyRetrieval=true 是为了在非 SSL 下让 caching_sha2_password 完成 RSA 公钥交换（仅本地开发用）
+    url: ${DB_URL:jdbc:mysql://localhost:3307/marca?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:marca}
+    password: ${DB_PASSWORD:marca-dev}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
