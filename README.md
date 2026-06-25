@@ -68,58 +68,75 @@
 
 ```
 marca/
-├── marca-frontend/     # Vue3 前端
-│   ├── src/
-│   │   ├── views/      # 页面
-│   │   ├── components/ # 组件
-│   │   ├── api/        # 接口请求
-│   │   ├── stores/     # Pinia 状态管理
-│   │   └── router/     # 路由
-│   └── ...
-└── marca-backend/      # Spring Boot 后端
-    ├── src/main/java/
-    │   └── app/marca/
-    │       ├── controller/
-    │       ├── service/
-    │       ├── entity/
-    │       └── repository/
-    └── ...
+├── docker-compose.yml      # MySQL 8（host 端口 3307，避开默认）
+├── .env.example            # 环境变量模板，复制为 .env 后修改
+├── docs/                   # 详细设计与开发说明书
+│   ├── 00-overview.md
+│   └── features/           # 按业务特性拆分：auth / questions / records / voice / ai-image
+├── marca-frontend/         # Vue3 + TS + Vite + Pinia + Tailwind
+│   └── src/
+│       ├── views/  components/  stores/  router/  api/  assets/
+└── marca-backend/          # Spring Boot 4.1 + Java 17
+    └── src/main/
+        ├── java/app/marca/
+        │   ├── controller/  service/  entity/  repository/
+        │   ├── dto/  security/  config/
+        └── resources/
+            ├── application.yml
+            └── db/schema.sql · db/seed.sql
 ```
+
+> 模块的数据库 / 接口 / 前端细节都在 [docs/](./docs/) 里，按特性拆分，开发对照看就行。
 
 ---
 
 ## 快速开始
 
-### 后端
+### 0. 准备环境变量
+
+```bash
+cp .env.example .env       # 改一下密码再用
+```
+
+### 1. 启动 MySQL（Docker）
+
+```bash
+docker compose up -d       # 首次会自动建库 + 灌入 schema.sql + seed.sql
+docker compose ps          # 等 STATUS 显示 healthy
+```
+
+> 主机端口 3307 → 容器 3306，避免与服务器上其他 MySQL 实例冲突。数据持久化在 named volume `marca-mysql-data`。
+
+### 2. 启动后端（Spring Boot）
 
 ```bash
 cd marca-backend
-
-# 配置数据库（application.yml）
-# spring.datasource.url=jdbc:mysql://localhost:3306/marca
-
-# 启动
-./mvnw spring-boot:run
+./mvnw spring-boot:run     # 监听 http://localhost:8080
 ```
 
-### 前端
+默认连 `localhost:3307` 用 `marca / marca-dev`。要换连接信息，改 `.env` 或直接 `export DB_URL=...` 后再启动。
+
+### 3. 启动前端（Vite）
 
 ```bash
 cd marca-frontend
-
 npm install
-npm run dev
+npm run dev                # http://localhost:5173
 ```
+
+Vite 已配置 `/api`、`/uploads` 代理到 8080，前端代码里直接调相对路径就行。
 
 ---
 
 ## 开发路线
 
 - [x] 项目立项 · 技术选型
-- [ ] 后端核心接口（注册登录 · 问答 · 记录）
-- [ ] 前端页面对接
-- [ ] UI 打磨（薄荷绿 · 圆角 · Nunito 字体）
+- [x] 前后端脚手架 + Docker MySQL
+- [x] 用户认证（注册 / 登录 / JWT）
+- [ ] 问题推荐（每日出题）
+- [ ] 记录主流程（问答 + 时间轴 + 随机回看）
 - [ ] 语音录制 · 存储 · 回放
+- [ ] UI 打磨（薄荷绿 · 圆角 · Nunito 字体）
 - [ ] Capacitor 移动端打包
 - [ ] AI 每日插画（待确定）
 
