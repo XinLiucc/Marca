@@ -19,4 +19,7 @@ public class SaveRecordRequest {
     private String voiceUrl;
 
     private Integer voiceDuration;
+
+    @Valid
+    private List<ImageInput> images;
 }
