@@ -2,6 +2,8 @@
 -- 每个 category 至少 20 题，避免短期内重复
 -- 执行：mysql -u root -p marca < seed.sql
 
+SET NAMES utf8mb4;
+
 -- event 维度
 INSERT INTO question (category, content) VALUES
 ('event', '今天有没有让你印象深刻的一件小事？'),

@@ -1,6 +1,8 @@
 -- Marca · 默刻 数据库建表脚本
 -- 执行前请先创建 database: CREATE DATABASE marca DEFAULT CHARACTER SET utf8mb4;
 
+SET NAMES utf8mb4;
+
 -- 用户表
 -- id 由应用层生成：14位时间戳(yyyyMMddHHmmss) + 5位随机，共19位 BIGINT
 CREATE TABLE IF NOT EXISTS user (
