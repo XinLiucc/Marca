@@ -15,7 +15,16 @@ const router = createRouter({
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
     },
-    // 后续模块：/timeline、/random 等
+    {
+      path: '/timeline',
+      name: 'timeline',
+      component: () => import('@/views/TimelineView.vue'),
+    },
+    {
+      path: '/random',
+      name: 'random',
+      component: () => import('@/views/RandomView.vue'),
+    },
   ],
 })
 
