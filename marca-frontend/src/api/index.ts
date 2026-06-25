@@ -18,13 +18,19 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-// 响应拦截器：401 统一清理 token
+// 响应拦截器：401 → 清登录态 + 跳登录页（带 redirect）
 http.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('marca_token')
-      // 路由跳转留给各模块自己处理（避免循环依赖 router）
+      localStorage.removeItem('marca_nickname')
+      const path = window.location.pathname
+      if (path !== '/login') {
+        const redirect = encodeURIComponent(path + window.location.search)
+        // 用 window.location 避免 api → store → router → api 的循环依赖
+        window.location.href = `/login?redirect=${redirect}`
+      }
     }
     return Promise.reject(err)
   },
