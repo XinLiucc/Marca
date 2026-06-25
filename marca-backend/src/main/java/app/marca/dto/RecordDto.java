@@ -16,14 +16,15 @@ public class RecordDto {
     private List<AnswerDto> answers;
     private String voiceUrl;
     private Integer voiceDuration;
-    private String imageUrl;
+    private List<ImageDto> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public static RecordDto from(Record r) {
         List<AnswerDto> answers = r.getAnswers().stream().map(AnswerDto::from).toList();
+        List<ImageDto> images = r.getImages().stream().map(ImageDto::from).toList();
         return new RecordDto(r.getId(), r.getRecordDate(), answers,
-                r.getVoiceUrl(), r.getVoiceDuration(), r.getImageUrl(),
+                r.getVoiceUrl(), r.getVoiceDuration(), images,
                 r.getCreatedAt(), r.getUpdatedAt());
     }
 }

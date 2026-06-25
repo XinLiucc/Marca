@@ -3,10 +3,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { questionsApi, type Question } from '@/api/questions'
-import { recordsApi, type RecordDto } from '@/api/records'
+import { recordsApi, type ImageDto, type RecordDto } from '@/api/records'
 import QuestionCountPicker from '@/components/QuestionCountPicker.vue'
 import QuestionCard from '@/components/QuestionCard.vue'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
+import ImageUploader from '@/components/ImageUploader.vue'
 
 type Mode = 'loading' | 'recorded' | 'editing' | 'error'
 
@@ -26,6 +27,9 @@ const submitting = ref(false)
 const voiceUrl = ref<string | null>(null)
 const voiceDuration = ref<number | null>(null)
 
+// 编辑态的图片（已上传，最终 save 时随 payload 一起提交）
+const images = ref<ImageDto[]>([])
+
 // 已记录态
 const todayRecord = ref<RecordDto | null>(null)
 
@@ -33,7 +37,9 @@ const filledCount = computed(
   () => Object.values(answers.value).filter((v) => v && v.trim().length > 0).length,
 )
 
-const canSubmit = computed(() => filledCount.value > 0 || !!voiceUrl.value)
+const canSubmit = computed(
+  () => filledCount.value > 0 || !!voiceUrl.value || images.value.length > 0,
+)
 
 onMounted(async () => {
   await loadToday()
@@ -87,6 +93,7 @@ function enterEdit() {
     count.value = questions.value.length || 3
     voiceUrl.value = todayRecord.value.voiceUrl
     voiceDuration.value = todayRecord.value.voiceDuration
+    images.value = todayRecord.value.images.map((img) => ({ ...img }))
   }
   mode.value = 'editing'
 }
@@ -111,7 +118,7 @@ function onVoiceCleared() {
 
 async function onSubmit() {
   if (!canSubmit.value) {
-    errorMsg.value = '至少答一题，或者录一段语音'
+    errorMsg.value = '至少答一题、录一段语音，或者加一张图'
     return
   }
   errorMsg.value = null
@@ -130,6 +137,12 @@ async function onSubmit() {
         })),
       voiceUrl: voiceUrl.value,
       voiceDuration: voiceDuration.value,
+      images: images.value.map((img) => ({
+        url: img.url,
+        width: img.width,
+        height: img.height,
+        bytes: img.bytes,
+      })),
     }
     const saved = await recordsApi.save(payload)
     todayRecord.value = saved
@@ -188,6 +201,19 @@ async function onSubmit() {
           </header>
           <audio :src="todayRecord.voiceUrl" controls class="w-full" />
         </section>
+        <section v-if="todayRecord.images.length" class="rounded-3xl bg-white p-5 shadow-sm">
+          <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
+            <span class="rounded-full bg-mint-100 px-2 py-0.5">图片</span>
+          </header>
+          <div class="grid grid-cols-3 gap-2">
+            <img
+              v-for="img in todayRecord.images"
+              :key="img.id ?? img.url"
+              :src="img.url"
+              class="aspect-square w-full rounded-2xl object-cover"
+            />
+          </div>
+        </section>
       </div>
       <button
         class="mt-6 w-full rounded-2xl bg-white py-3 text-sm font-medium text-mint-600 shadow-sm transition hover:bg-mint-50"
@@ -220,6 +246,8 @@ async function onSubmit() {
           @uploaded="onVoiceUploaded"
           @cleared="onVoiceCleared"
         />
+
+        <ImageUploader v-model="images" />
       </div>
 
       <p v-if="errorMsg" class="mt-3 text-sm text-red-500">{{ errorMsg }}</p>
@@ -230,7 +258,11 @@ async function onSubmit() {
         class="mt-6 w-full rounded-2xl bg-mint-500 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-mint-600 disabled:bg-mint-300 disabled:opacity-70"
         @click="onSubmit"
       >
-        {{ submitting ? '保存中…' : `保存今日记录（${filledCount} 题${voiceUrl ? ' + 语音' : ''}）` }}
+        {{
+          submitting
+            ? '保存中…'
+            : `保存今日记录（${filledCount} 题${voiceUrl ? ' + 语音' : ''}${images.length ? ` + ${images.length} 图` : ''}）`
+        }}
       </button>
     </template>
   </main>

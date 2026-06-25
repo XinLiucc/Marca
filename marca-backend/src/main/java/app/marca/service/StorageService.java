@@ -11,5 +11,10 @@ public interface StorageService {
     /** 保存语音文件，返回访问 url（如 /uploads/voice/2026-06-25/123_1718000000.webm）。 */
     StoredFile storeVoice(long userId, MultipartFile file);
 
+    /** 保存图片文件，返回访问 url 与（解析得到的）宽高，解析失败时宽高为 null。 */
+    StoredImage storeImage(long userId, MultipartFile file);
+
     record StoredFile(String url, long bytes) {}
+
+    record StoredImage(String url, long bytes, Integer width, Integer height) {}
 }

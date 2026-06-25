@@ -21,7 +21,9 @@ const categoryLabel: Record<string, string> = {
     <header class="mb-3 flex items-baseline justify-between">
       <p class="text-base font-medium text-mint-600">{{ record.recordDate }}</p>
       <span class="text-xs text-gray-400">
-        {{ record.answers.length }} 道 · {{ record.voiceUrl ? '含语音' : '无语音' }}
+        {{ record.answers.length }} 道
+        <span v-if="record.voiceUrl"> · 语音</span>
+        <span v-if="record.images.length"> · {{ record.images.length }} 图</span>
       </span>
     </header>
 
@@ -53,7 +55,26 @@ const categoryLabel: Record<string, string> = {
         <audio :src="record.voiceUrl" controls class="w-full" />
       </div>
 
-      <p v-if="!record.answers.length && !record.voiceUrl" class="text-sm text-gray-400">（空记录）</p>
+      <div v-if="record.images.length" class="mt-3 rounded-2xl bg-mint-50/50 p-3">
+        <p class="mb-2 text-xs text-mint-600">图片</p>
+        <div class="grid grid-cols-3 gap-2">
+          <a
+            v-for="img in record.images"
+            :key="img.id ?? img.url"
+            :href="img.url"
+            target="_blank"
+            rel="noopener"
+            class="block aspect-square overflow-hidden rounded-2xl bg-white"
+          >
+            <img :src="img.url" class="h-full w-full object-cover" />
+          </a>
+        </div>
+      </div>
+
+      <p
+        v-if="!record.answers.length && !record.voiceUrl && !record.images.length"
+        class="text-sm text-gray-400"
+      >（空记录）</p>
     </template>
   </article>
 </template>

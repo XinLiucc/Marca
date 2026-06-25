@@ -61,6 +61,11 @@ public class Record {
     @Builder.Default
     private List<RecordAnswer> answers = new ArrayList<>();
 
+    @OneToMany(mappedBy = "record", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("sortOrder ASC")
+    @Builder.Default
+    private List<RecordImage> images = new ArrayList<>();
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();

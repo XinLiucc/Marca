@@ -1,5 +1,6 @@
 package app.marca.controller;
 
+import app.marca.dto.ImageUploadResponse;
 import app.marca.dto.RecordDto;
 import app.marca.dto.RecordPage;
 import app.marca.dto.SaveRecordRequest;
@@ -42,6 +43,15 @@ public class RecordController {
     ) {
         var stored = storageService.storeVoice(user.id(), file);
         return new VoiceUploadResponse(stored.url(), duration, stored.bytes());
+    }
+
+    @PostMapping(value = "/image", consumes = "multipart/form-data")
+    public ImageUploadResponse uploadImage(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestPart("file") MultipartFile file
+    ) {
+        var stored = storageService.storeImage(user.id(), file);
+        return new ImageUploadResponse(stored.url(), stored.width(), stored.height(), stored.bytes());
     }
 
     @PostMapping

@@ -48,3 +48,16 @@ CREATE TABLE IF NOT EXISTS record_answer (
   CONSTRAINT fk_answer_record   FOREIGN KEY (record_id)   REFERENCES record(id) ON DELETE CASCADE,
   CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES question(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 图片明细（一条 record 挂 0~N 张图）
+CREATE TABLE IF NOT EXISTS record_image (
+  id          BIGINT PRIMARY KEY AUTO_INCREMENT,
+  record_id   BIGINT NOT NULL,
+  url         VARCHAR(500) NOT NULL,
+  width       INT,
+  height      INT,
+  bytes       INT,
+  sort_order  INT NOT NULL DEFAULT 0,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_image_record FOREIGN KEY (record_id) REFERENCES record(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

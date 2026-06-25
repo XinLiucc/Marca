@@ -2,9 +2,11 @@ package app.marca.service;
 
 import app.marca.config.ApiException;
 import app.marca.dto.AnswerInput;
+import app.marca.dto.ImageInput;
 import app.marca.dto.SaveRecordRequest;
 import app.marca.entity.Record;
 import app.marca.entity.RecordAnswer;
+import app.marca.entity.RecordImage;
 import app.marca.repository.RecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,9 +29,10 @@ public class RecordService {
     public Record save(Long userId, SaveRecordRequest req) {
         boolean hasAnswer = req.getAnswers() != null && !req.getAnswers().isEmpty();
         boolean hasVoice = req.getVoiceUrl() != null && !req.getVoiceUrl().isBlank();
-        if (!hasAnswer && !hasVoice) {
+        boolean hasImage = req.getImages() != null && !req.getImages().isEmpty();
+        if (!hasAnswer && !hasVoice && !hasImage) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "EMPTY_RECORD",
-                    "至少需要回答一题或录一段语音");
+                    "至少需要回答一题、录一段语音或加一张图");
         }
 
         Record record = recordRepository.findByUserIdAndRecordDate(userId, req.getRecordDate())
@@ -54,6 +57,23 @@ public class RecordService {
                 record.getAnswers().add(answer);
             }
         }
+
+        record.getImages().clear();
+        if (hasImage) {
+            int order = 0;
+            for (ImageInput in : req.getImages()) {
+                RecordImage img = RecordImage.builder()
+                        .record(record)
+                        .url(in.getUrl())
+                        .width(in.getWidth())
+                        .height(in.getHeight())
+                        .bytes(in.getBytes())
+                        .sortOrder(order++)
+                        .build();
+                record.getImages().add(img);
+            }
+        }
+
         record.setVoiceUrl(req.getVoiceUrl());
         record.setVoiceDuration(req.getVoiceDuration());
 
