@@ -14,6 +14,23 @@ const categoryLabel: Record<string, string> = {
   emotion: '情绪',
   future: '未来',
 }
+
+// compact 模式下的摘要文本：优先问答首条，否则自由记录，否则提示只有语音/图
+const compactPreview = computed(() => {
+  if (props.record.answers[0]) return props.record.answers[0].answer
+  if (props.record.freeText) return props.record.freeText
+  if (props.record.voiceUrl) return '（只有语音）'
+  if (props.record.images.length) return '（只有图片）'
+  return '（空记录）'
+})
+
+const isEmpty = computed(
+  () =>
+    !props.record.answers.length &&
+    !props.record.voiceUrl &&
+    !props.record.images.length &&
+    !props.record.freeText,
+)
 </script>
 
 <template>
@@ -21,7 +38,8 @@ const categoryLabel: Record<string, string> = {
     <header class="mb-3 flex items-baseline justify-between">
       <p class="text-base font-medium text-mint-600">{{ record.recordDate }}</p>
       <span class="text-xs text-gray-400">
-        {{ record.answers.length }} 道
+        <span v-if="record.answers.length">{{ record.answers.length }} 段</span>
+        <span v-if="record.freeText">{{ record.answers.length ? ' · ' : '' }}还想说</span>
         <span v-if="record.voiceUrl"> · 语音</span>
         <span v-if="record.images.length"> · {{ record.images.length }} 图</span>
       </span>
@@ -29,16 +47,12 @@ const categoryLabel: Record<string, string> = {
 
     <!-- compact：摘要 -->
     <template v-if="mode === 'compact'">
-      <p
-        v-if="record.answers[0]"
-        class="line-clamp-2 text-sm leading-relaxed text-gray-600"
-      >
-        {{ record.answers[0].answer }}
+      <p class="line-clamp-2 text-sm leading-relaxed text-gray-600">
+        {{ compactPreview }}
       </p>
-      <p v-else class="text-sm text-gray-400">（只有语音）</p>
     </template>
 
-    <!-- full：所有问答展开 -->
+    <!-- full：所有内容展开 -->
     <template v-else>
       <ul v-if="record.answers.length" class="space-y-3">
         <li v-for="(a, i) in record.answers" :key="a.id ?? i" class="rounded-2xl bg-mint-50/50 p-3">
@@ -49,6 +63,11 @@ const categoryLabel: Record<string, string> = {
           <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ a.answer }}</p>
         </li>
       </ul>
+
+      <div v-if="record.freeText" class="mt-3 rounded-2xl bg-mint-50/50 p-3">
+        <p class="mb-2 text-xs text-mint-600">还想说</p>
+        <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ record.freeText }}</p>
+      </div>
 
       <div v-if="record.voiceUrl" class="mt-3 rounded-2xl bg-mint-50/50 p-3">
         <p class="mb-2 text-xs text-mint-600">语音</p>
@@ -71,10 +90,7 @@ const categoryLabel: Record<string, string> = {
         </div>
       </div>
 
-      <p
-        v-if="!record.answers.length && !record.voiceUrl && !record.images.length"
-        class="text-sm text-gray-400"
-      >（空记录）</p>
+      <p v-if="isEmpty" class="text-sm text-gray-400">（空记录）</p>
     </template>
   </article>
 </template>
