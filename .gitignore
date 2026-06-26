@@ -6,3 +6,6 @@
 .vscode/
 .idea/
 *.swp
+
+# 本地运行笔记（与 docs/features 设计文档区分开，不入库）
+docs/STATUS.md
