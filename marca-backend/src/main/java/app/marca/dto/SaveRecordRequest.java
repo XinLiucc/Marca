@@ -22,4 +22,7 @@ public class SaveRecordRequest {
 
     @Valid
     private List<ImageInput> images;
+
+    /** 用户自由记录的文本（"我还想说"），可空 */
+    private String freeText;
 }

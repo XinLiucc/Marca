@@ -17,6 +17,7 @@ public class RecordDto {
     private String voiceUrl;
     private Integer voiceDuration;
     private List<ImageDto> images;
+    private String freeText;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -24,7 +25,7 @@ public class RecordDto {
         List<AnswerDto> answers = r.getAnswers().stream().map(AnswerDto::from).toList();
         List<ImageDto> images = r.getImages().stream().map(ImageDto::from).toList();
         return new RecordDto(r.getId(), r.getRecordDate(), answers,
-                r.getVoiceUrl(), r.getVoiceDuration(), images,
+                r.getVoiceUrl(), r.getVoiceDuration(), images, r.getFreeText(),
                 r.getCreatedAt(), r.getUpdatedAt());
     }
 }

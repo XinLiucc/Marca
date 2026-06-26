@@ -4,12 +4,10 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { questionsApi, type Question } from '@/api/questions'
 import { recordsApi, type ImageDto, type RecordDto } from '@/api/records'
-import QuestionCountPicker from '@/components/QuestionCountPicker.vue'
-import QuestionCard from '@/components/QuestionCard.vue'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 
-type Mode = 'loading' | 'recorded' | 'editing' | 'error'
+type Mode = 'loading' | 'recorded' | 'answering' | 'finishing' | 'error'
 
 const auth = useAuthStore()
 
@@ -17,33 +15,54 @@ const mode = ref<Mode>('loading')
 const errorMsg = ref<string | null>(null)
 const today = ref<string>('')
 
-// 编辑态
-const count = ref(3)
+// answering 状态
+const desiredCount = ref(5)
+const countPickerOpen = ref(false)
 const questions = ref<Question[]>([])
 const answers = ref<Record<number, string>>({})
-const submitting = ref(false)
+const currentIndex = ref(0)
 
-// 编辑态的语音（已上传后的 url + duration）
+// finishing 状态
+const freeText = ref<string>('')
 const voiceUrl = ref<string | null>(null)
 const voiceDuration = ref<number | null>(null)
-
-// 编辑态的图片（已上传，最终 save 时随 payload 一起提交）
 const images = ref<ImageDto[]>([])
+const summaryOpen = ref(false)
+const submitting = ref(false)
+
+const canSubmit = computed(
+  () =>
+    filledCount.value > 0 ||
+    !!voiceUrl.value ||
+    images.value.length > 0 ||
+    freeText.value.trim().length > 0,
+)
+
+// 已答的列表（finishing 摘要用）
+const answeredList = computed(() =>
+  questions.value
+    .map((q) => ({ q, text: (answers.value[q.id] ?? '').trim() }))
+    .filter(({ text }) => text.length > 0),
+)
 
 // 已记录态
 const todayRecord = ref<RecordDto | null>(null)
+
+const currentQuestion = computed(() => questions.value[currentIndex.value])
+const isFirst = computed(() => currentIndex.value === 0)
+const isLast = computed(() => currentIndex.value === questions.value.length - 1)
 
 const filledCount = computed(
   () => Object.values(answers.value).filter((v) => v && v.trim().length > 0).length,
 )
 
-const canSubmit = computed(
-  () => filledCount.value > 0 || !!voiceUrl.value || images.value.length > 0,
-)
+const categoryLabel: Record<Question['category'], string> = {
+  event: '事件',
+  emotion: '情绪',
+  future: '未来',
+}
 
-onMounted(async () => {
-  await loadToday()
-})
+onMounted(loadToday)
 
 async function loadToday() {
   mode.value = 'loading'
@@ -54,8 +73,8 @@ async function loadToday() {
       today.value = rec.recordDate
       mode.value = 'recorded'
     } else {
-      await loadQuestions()
-      mode.value = 'editing'
+      await loadQuestions(desiredCount.value)
+      mode.value = 'answering'
     }
   } catch (e) {
     errorMsg.value = '加载失败，稍后再试'
@@ -63,39 +82,47 @@ async function loadToday() {
   }
 }
 
-async function loadQuestions() {
-  const res = await questionsApi.today(count.value)
+async function loadQuestions(n: number) {
+  const res = await questionsApi.today(n)
   questions.value = res.questions
   today.value = res.date
-  // 切 count 时清空已填；预初始化每题为空串，方便 v-model
   answers.value = Object.fromEntries(res.questions.map((q) => [q.id, '']))
+  currentIndex.value = 0
 }
 
-// 编辑态下切 count 重新出题；count 与当前题数相同则跳过
-// （enterEdit 里会程序化设置 count，需避免误触发把预填答案冲掉）
-watch(count, async (newCount) => {
-  if (mode.value !== 'editing') return
-  if (newCount === questions.value.length) return
-  await loadQuestions()
-})
+async function changeCount(n: number) {
+  if (n === desiredCount.value) {
+    countPickerOpen.value = false
+    return
+  }
+  desiredCount.value = n
+  countPickerOpen.value = false
+  await loadQuestions(n)
+}
 
-function enterEdit() {
-  // 从「已记录」回到编辑，把已有答案预填
+async function enterAnswering() {
+  // 从「已记录」回去重写：预填已有的语音 / 图 / 自由文本；
+  // 问答部分：有则回显，没有则按当前 desiredCount 抓新的
   if (todayRecord.value) {
-    questions.value = todayRecord.value.answers.map((a) => ({
-      id: a.questionId ?? -1,
-      category: (a.category ?? 'event') as Question['category'],
-      content: a.question,
-    }))
-    answers.value = Object.fromEntries(
-      todayRecord.value.answers.map((a) => [a.questionId ?? -1, a.answer]),
-    )
-    count.value = questions.value.length || 3
+    freeText.value = todayRecord.value.freeText ?? ''
     voiceUrl.value = todayRecord.value.voiceUrl
     voiceDuration.value = todayRecord.value.voiceDuration
     images.value = todayRecord.value.images.map((img) => ({ ...img }))
+    const existing = todayRecord.value.answers
+    if (existing.length > 0) {
+      questions.value = existing.map((a) => ({
+        id: a.questionId ?? -1,
+        category: (a.category ?? 'event') as Question['category'],
+        content: a.question,
+      }))
+      answers.value = Object.fromEntries(existing.map((a) => [a.questionId ?? -1, a.answer]))
+      desiredCount.value = questions.value.length
+      currentIndex.value = 0
+    } else {
+      await loadQuestions(desiredCount.value)
+    }
   }
-  mode.value = 'editing'
+  mode.value = 'answering'
 }
 
 function getAnswer(id: number): string {
@@ -106,9 +133,36 @@ function setAnswer(id: number, v: string) {
   answers.value[id] = v
 }
 
-function onVoiceUploaded(payload: { voiceUrl: string; duration: number }) {
-  voiceUrl.value = payload.voiceUrl
-  voiceDuration.value = payload.duration
+function next() {
+  if (isLast.value) {
+    goFinish()
+  } else {
+    currentIndex.value++
+  }
+}
+
+function prev() {
+  if (!isFirst.value) currentIndex.value--
+}
+
+function skip() {
+  if (currentQuestion.value) {
+    answers.value[currentQuestion.value.id] = ''
+  }
+  next()
+}
+
+function goFinish() {
+  mode.value = 'finishing'
+}
+
+function backToAnswering() {
+  mode.value = 'answering'
+}
+
+function onVoiceUploaded(p: { voiceUrl: string; duration: number }) {
+  voiceUrl.value = p.voiceUrl
+  voiceDuration.value = p.duration
 }
 
 function onVoiceCleared() {
@@ -116,13 +170,10 @@ function onVoiceCleared() {
   voiceDuration.value = null
 }
 
+// 占位 save（Checkpoint 3 才把语音/图片整合进来；这里先能保存问答 + freeText）
 async function onSubmit() {
-  if (!canSubmit.value) {
-    errorMsg.value = '至少答一题、录一段语音，或者加一张图'
-    return
-  }
-  errorMsg.value = null
   submitting.value = true
+  errorMsg.value = null
   try {
     const payload = {
       recordDate: today.value,
@@ -143,25 +194,30 @@ async function onSubmit() {
         height: img.height,
         bytes: img.bytes,
       })),
+      freeText: freeText.value.trim() || null,
     }
     const saved = await recordsApi.save(payload)
     todayRecord.value = saved
     mode.value = 'recorded'
   } catch (e) {
-    if (axios.isAxiosError(e)) {
-      errorMsg.value = e.response?.data?.message ?? '保存失败'
-    } else {
-      errorMsg.value = '保存失败'
-    }
+    errorMsg.value = axios.isAxiosError(e) ? (e.response?.data?.message ?? '保存失败') : '保存失败'
   } finally {
     submitting.value = false
   }
 }
+
+// 切换 desiredCount 后题目变了，currentIndex 可能越界
+watch(questions, () => {
+  if (currentIndex.value >= questions.value.length) {
+    currentIndex.value = Math.max(0, questions.value.length - 1)
+  }
+})
 </script>
 
 <template>
   <main class="mx-auto max-w-xl px-4 py-8 pb-24">
-    <header class="mb-6 flex items-end justify-between">
+    <!-- 顶部：日期 + 昵称 + 导航 -->
+    <header class="mb-8 flex items-end justify-between">
       <div>
         <p class="text-sm text-gray-500">{{ today || '今天' }}</p>
         <h1 class="text-2xl font-bold text-mint-600">你好，{{ auth.nickname ?? '默刻用户' }}</h1>
@@ -178,23 +234,32 @@ async function onSubmit() {
       加载中…
     </div>
 
-    <!-- error（首屏） -->
+    <!-- error -->
     <div v-else-if="mode === 'error'" class="rounded-3xl bg-red-50 p-6 text-center text-sm text-red-500">
       {{ errorMsg }}
     </div>
 
     <!-- 已记录 -->
     <template v-else-if="mode === 'recorded' && todayRecord">
-      <p class="mb-3 text-sm text-mint-600">今天已经记录过啦 · 想改的话点底下「重新写」</p>
+      <p class="mb-4 text-sm text-mint-600">今天已经记录过啦 · 想改的话点底下「重新写」</p>
       <div class="space-y-3">
-        <QuestionCard
+        <article
           v-for="(a, i) in todayRecord.answers"
           :key="a.id ?? i"
-          :question="{ id: a.questionId ?? -1, category: (a.category ?? 'event') as Question['category'], content: a.question }"
-          :index="i"
-          :model-value="a.answer"
-          readonly
-        />
+          class="rounded-3xl bg-white p-5 shadow-sm"
+        >
+          <header class="mb-2 flex items-center gap-2 text-xs text-mint-600">
+            <span class="rounded-full bg-mint-100 px-2 py-0.5">{{ a.category ? categoryLabel[a.category as Question['category']] : '—' }}</span>
+            <span class="text-gray-400">{{ a.question }}</span>
+          </header>
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ a.answer }}</p>
+        </article>
+        <section v-if="todayRecord.freeText" class="rounded-3xl bg-white p-5 shadow-sm">
+          <header class="mb-2 flex items-center gap-2 text-xs text-mint-600">
+            <span class="rounded-full bg-mint-100 px-2 py-0.5">还想说</span>
+          </header>
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ todayRecord.freeText }}</p>
+        </section>
         <section v-if="todayRecord.voiceUrl" class="rounded-3xl bg-white p-5 shadow-sm">
           <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
             <span class="rounded-full bg-mint-100 px-2 py-0.5">语音</span>
@@ -206,47 +271,166 @@ async function onSubmit() {
             <span class="rounded-full bg-mint-100 px-2 py-0.5">图片</span>
           </header>
           <div class="grid grid-cols-3 gap-2">
-            <img
-              v-for="img in todayRecord.images"
-              :key="img.id ?? img.url"
-              :src="img.url"
-              class="aspect-square w-full rounded-2xl object-cover"
-            />
+            <img v-for="img in todayRecord.images" :key="img.id ?? img.url" :src="img.url" class="aspect-square w-full rounded-2xl object-cover" />
           </div>
         </section>
       </div>
-      <button
-        class="mt-6 w-full rounded-2xl bg-white py-3 text-sm font-medium text-mint-600 shadow-sm transition hover:bg-mint-50"
-        @click="enterEdit"
-      >
+      <button class="mt-6 w-full rounded-2xl bg-white py-3 text-sm font-medium text-mint-600 shadow-sm transition hover:bg-mint-50" @click="enterAnswering">
         重新写
       </button>
     </template>
 
-    <!-- 编辑 -->
-    <template v-else>
-      <section class="mb-4 flex items-center justify-between">
-        <span class="text-sm text-gray-600">今天答几题</span>
-        <QuestionCountPicker v-model="count" />
+    <!-- answering：一次一个 -->
+    <template v-else-if="mode === 'answering'">
+      <!-- 顶部：圆点进度 + 数量调节 -->
+      <div class="mb-8 flex items-center justify-between">
+        <div class="flex gap-1.5">
+          <span
+            v-for="(_, i) in questions"
+            :key="i"
+            class="h-2 w-2 rounded-full transition"
+            :class="
+              i < currentIndex
+                ? 'bg-mint-400'
+                : i === currentIndex
+                ? 'bg-mint-600 ring-2 ring-mint-200'
+                : 'bg-gray-200'
+            "
+          />
+        </div>
+        <div class="relative">
+          <button
+            class="text-xs text-gray-400 hover:text-mint-600"
+            @click="countPickerOpen = !countPickerOpen"
+          >
+            {{ desiredCount }} · 调
+          </button>
+          <div
+            v-if="countPickerOpen"
+            class="absolute right-0 top-6 z-10 flex rounded-2xl bg-white p-1 shadow-md"
+          >
+            <button
+              v-for="n in 7"
+              :key="n"
+              class="h-8 w-8 rounded-xl text-xs transition"
+              :class="n === desiredCount ? 'bg-mint-100 text-mint-600' : 'text-gray-500 hover:bg-mint-50'"
+              @click="changeCount(n)"
+            >
+              {{ n }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <article v-if="currentQuestion" class="rounded-3xl bg-white p-6 shadow-sm">
+        <header class="mb-5">
+          <span class="rounded-full bg-mint-100 px-3 py-1 text-xs text-mint-600">
+            {{ categoryLabel[currentQuestion.category] }}
+          </span>
+        </header>
+        <p class="mb-6 text-xl font-medium leading-relaxed text-gray-800">
+          {{ currentQuestion.content }}
+        </p>
+        <textarea
+          :value="getAnswer(currentQuestion.id)"
+          rows="5"
+          placeholder="想到什么就写什么，留空就跳过"
+          class="min-h-[140px] w-full resize-none rounded-2xl border border-mint-200 bg-mint-50 p-4 text-base leading-relaxed text-gray-800 placeholder:text-mint-400 outline-none transition focus:border-mint-500 focus:bg-white focus:ring-2 focus:ring-mint-100"
+          @input="(e) => setAnswer(currentQuestion!.id, (e.target as HTMLTextAreaElement).value)"
+        />
+      </article>
+
+      <!-- 底部操作 -->
+      <nav class="mt-6 flex items-center justify-between">
+        <button
+          class="rounded-2xl px-4 py-2 text-sm text-gray-500 transition hover:bg-mint-50 disabled:opacity-30"
+          :disabled="isFirst"
+          @click="prev"
+        >
+          上一个
+        </button>
+        <button
+          class="rounded-2xl px-4 py-2 text-sm text-gray-500 transition hover:bg-mint-50"
+          @click="skip"
+        >
+          跳过
+        </button>
+        <div class="flex items-center gap-2">
+          <button
+            class="rounded-2xl bg-mint-500 px-6 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
+            @click="next"
+          >
+            {{ isLast ? '完成' : '下一个' }}
+          </button>
+          <button
+            v-if="!isLast"
+            class="text-xs text-gray-400 underline-offset-2 hover:text-mint-600 hover:underline"
+            @click="goFinish"
+          >
+            就到这里
+          </button>
+        </div>
+      </nav>
+    </template>
+
+    <!-- finishing: 自由记录 + 语音 + 图片 + 保存 -->
+    <template v-else-if="mode === 'finishing'">
+      <button
+        class="mb-6 text-xs text-gray-400 transition hover:text-mint-600"
+        @click="backToAnswering"
+      >
+        ← 返回继续答
+      </button>
+
+      <!-- 折叠摘要 -->
+      <section class="mb-3">
+        <button
+          class="flex w-full items-center justify-between rounded-3xl bg-white px-5 py-3 text-sm text-gray-600 shadow-sm transition hover:bg-mint-50"
+          @click="summaryOpen = !summaryOpen"
+        >
+          <span>
+            今天写了 <span class="font-medium text-mint-600">{{ filledCount }}</span> 个
+            <span v-if="filledCount === 0" class="text-gray-400"> · 还没动笔也没关系</span>
+          </span>
+          <span class="text-xs text-gray-400">{{ summaryOpen ? '收起' : '展开' }}</span>
+        </button>
+        <div v-if="summaryOpen && answeredList.length" class="mt-2 space-y-2">
+          <article
+            v-for="(item, i) in answeredList"
+            :key="i"
+            class="rounded-2xl bg-mint-50/60 p-3"
+          >
+            <p class="mb-1 text-xs text-mint-600">
+              <span class="rounded-full bg-mint-100 px-2 py-0.5">{{ categoryLabel[item.q.category] }}</span>
+              <span class="ml-2 text-gray-400">{{ item.q.content }}</span>
+            </p>
+            <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{{ item.text }}</p>
+          </article>
+        </div>
       </section>
 
-      <div class="space-y-3">
-        <QuestionCard
-          v-for="(q, i) in questions"
-          :key="q.id"
-          :question="q"
-          :index="i"
-          :model-value="getAnswer(q.id)"
-          @update:model-value="(v: string) => setAnswer(q.id, v)"
+      <!-- 我还想说 -->
+      <section class="mb-3 rounded-3xl bg-white p-5 shadow-sm">
+        <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
+          <span class="rounded-full bg-mint-100 px-2 py-0.5">我还想说</span>
+          <span class="text-gray-400">想到什么都行，不用很长</span>
+        </header>
+        <textarea
+          v-model="freeText"
+          rows="5"
+          placeholder="今天还想说点什么？"
+          class="min-h-[140px] w-full resize-none rounded-2xl border border-mint-200 bg-mint-50 p-4 text-base leading-relaxed text-gray-800 placeholder:text-mint-400 outline-none transition focus:border-mint-500 focus:bg-white focus:ring-2 focus:ring-mint-100"
         />
+      </section>
 
+      <!-- 语音 + 图片 -->
+      <div class="space-y-3">
         <VoiceRecorder
           :initial-url="voiceUrl"
           :initial-duration="voiceDuration"
           @uploaded="onVoiceUploaded"
           @cleared="onVoiceCleared"
         />
-
         <ImageUploader v-model="images" />
       </div>
 
@@ -255,14 +439,10 @@ async function onSubmit() {
       <button
         type="button"
         :disabled="submitting || !canSubmit"
-        class="mt-6 w-full rounded-2xl bg-mint-500 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-mint-600 disabled:bg-mint-300 disabled:opacity-70"
+        class="mt-6 w-full rounded-2xl bg-mint-500 py-3 text-base font-medium text-white shadow-sm transition hover:bg-mint-600 disabled:bg-mint-300 disabled:opacity-70"
         @click="onSubmit"
       >
-        {{
-          submitting
-            ? '保存中…'
-            : `保存今日记录（${filledCount} 题${voiceUrl ? ' + 语音' : ''}${images.length ? ` + ${images.length} 图` : ''}）`
-        }}
+        {{ submitting ? '保存中…' : '保存今日记录' }}
       </button>
     </template>
   </main>

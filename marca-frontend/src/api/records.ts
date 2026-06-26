@@ -26,6 +26,7 @@ export interface RecordDto {
   voiceUrl: string | null
   voiceDuration: number | null
   images: ImageDto[]
+  freeText: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -36,6 +37,7 @@ export interface SaveRecordPayload {
   voiceUrl?: string | null
   voiceDuration?: number | null
   images?: Omit<ImageDto, 'id' | 'sortOrder'>[]
+  freeText?: string | null
 }
 
 export interface RecordPage {

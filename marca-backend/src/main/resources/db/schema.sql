@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS record (
   voice_url      VARCHAR(500),
   voice_duration INT,
   image_url      VARCHAR(500),
+  free_text      TEXT,                              -- 用户主动写的自由记录（"我还想说"）
   created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_user_date (user_id, record_date),
