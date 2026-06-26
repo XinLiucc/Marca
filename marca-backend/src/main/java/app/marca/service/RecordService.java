@@ -30,9 +30,10 @@ public class RecordService {
         boolean hasAnswer = req.getAnswers() != null && !req.getAnswers().isEmpty();
         boolean hasVoice = req.getVoiceUrl() != null && !req.getVoiceUrl().isBlank();
         boolean hasImage = req.getImages() != null && !req.getImages().isEmpty();
-        if (!hasAnswer && !hasVoice && !hasImage) {
+        boolean hasFreeText = req.getFreeText() != null && !req.getFreeText().isBlank();
+        if (!hasAnswer && !hasVoice && !hasImage && !hasFreeText) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "EMPTY_RECORD",
-                    "至少需要回答一题、录一段语音或加一张图");
+                    "今天总得留下点什么");
         }
 
         Record record = recordRepository.findByUserIdAndRecordDate(userId, req.getRecordDate())
@@ -76,6 +77,7 @@ public class RecordService {
 
         record.setVoiceUrl(req.getVoiceUrl());
         record.setVoiceDuration(req.getVoiceDuration());
+        record.setFreeText(hasFreeText ? req.getFreeText().trim() : null);
 
         return recordRepository.save(record);
     }

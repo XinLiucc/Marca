@@ -50,6 +50,9 @@ public class Record {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Column(name = "free_text", columnDefinition = "TEXT")
+    private String freeText;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
