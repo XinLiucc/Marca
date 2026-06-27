@@ -30,6 +30,28 @@ const images = ref<ImageDto[]>([])
 const summaryOpen = ref(false)
 const submitting = ref(false)
 
+// 夜猫子模式：凌晨 < 5:00 时显示「这其实是昨天写的吗」勾选项
+// 勾上 → recordDate 写成前一天
+const isLateNightWrite = ref(false)              // 是否勾选「归到昨天」
+const forceNightOwl = ref(false)                 // 测试钩子：强制显示提示（dev 验收用）
+const showNightOwlPrompt = computed(() => {
+  if (forceNightOwl.value) return true
+  const h = new Date().getHours()
+  return h < 5
+})
+const yesterdayLabel = computed(() => {
+  // 直接从后端给的 today.value (Asia/Shanghai 当天日期) 减一天，
+  // 避免用 new Date().toISOString() 在凌晨时段被 UTC 漂移坑（中国时区 +8）
+  if (!today.value) return ''
+  const [y, m, d] = today.value.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() - 1)
+  const yy = dt.getFullYear()
+  const mm = (dt.getMonth() + 1).toString().padStart(2, '0')
+  const dd = dt.getDate().toString().padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+})
+
 const canSubmit = computed(
   () =>
     filledCount.value > 0 ||
@@ -170,13 +192,14 @@ function onVoiceCleared() {
   voiceDuration.value = null
 }
 
-// 占位 save（Checkpoint 3 才把语音/图片整合进来；这里先能保存问答 + freeText）
 async function onSubmit() {
   submitting.value = true
   errorMsg.value = null
   try {
+    // 夜猫子勾选时把 recordDate 改成昨天；否则按 today.value（来自 questions/today 后端返回的 date）
+    const effectiveDate = isLateNightWrite.value ? yesterdayLabel.value : today.value
     const payload = {
-      recordDate: today.value,
+      recordDate: effectiveDate,
       answers: questions.value
         .map((q) => ({ q, text: (answers.value[q.id] ?? '').trim() }))
         .filter(({ text }) => text.length > 0)
@@ -198,7 +221,11 @@ async function onSubmit() {
     }
     const saved = await recordsApi.save(payload)
     todayRecord.value = saved
+    // 如果保存到了昨天，本会话里的 todayRecord 概念其实是「昨天的」，
+    // 这里依然把 mode 切到 recorded 让用户看到自己写完的成果；
+    // 用户下次进首页会按真实今天重新加载
     mode.value = 'recorded'
+    isLateNightWrite.value = false
   } catch (e) {
     errorMsg.value = axios.isAxiosError(e) ? (e.response?.data?.message ?? '保存失败') : '保存失败'
   } finally {
@@ -222,10 +249,17 @@ watch(questions, () => {
         <p class="text-sm text-gray-500">{{ today || '今天' }}</p>
         <h1 class="text-2xl font-bold text-mint-600">你好，{{ auth.nickname ?? '默刻用户' }}</h1>
       </div>
-      <nav class="flex gap-2 text-xs text-gray-500">
+      <nav class="flex items-center gap-2 text-xs text-gray-500">
         <RouterLink to="/timeline" class="rounded-full px-3 py-1 hover:bg-mint-50">时间轴</RouterLink>
         <RouterLink to="/random" class="rounded-full px-3 py-1 hover:bg-mint-50">随机</RouterLink>
         <button class="rounded-full px-3 py-1 hover:bg-mint-50" @click="auth.logout(); $router.push('/login')">退出</button>
+        <!-- DEV: 测试钩子，强制显示夜猫子勾选项；生产前删 -->
+        <button
+          class="rounded-full px-2 py-1 text-[10px] opacity-30 hover:opacity-100"
+          :class="forceNightOwl ? 'bg-mint-500 text-white' : 'bg-gray-200'"
+          @click="forceNightOwl = !forceNightOwl"
+          title="DEV: 强制显示夜猫子勾选"
+        >🌙</button>
       </nav>
     </header>
 
@@ -433,6 +467,19 @@ watch(questions, () => {
         />
         <ImageUploader v-model="images" />
       </div>
+
+      <!-- 夜猫子勾选：凌晨 < 5:00 出现，可勾上将日记归到昨天 -->
+      <label
+        v-if="showNightOwlPrompt"
+        class="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl bg-mint-50/60 px-4 py-3 text-sm text-gray-600 transition hover:bg-mint-50"
+      >
+        <input
+          v-model="isLateNightWrite"
+          type="checkbox"
+          class="h-4 w-4 accent-mint-500"
+        />
+        <span class="flex-1">凌晨也在写昨天的事？归到 {{ yesterdayLabel }}</span>
+      </label>
 
       <p v-if="errorMsg" class="mt-3 text-sm text-red-500">{{ errorMsg }}</p>
 
