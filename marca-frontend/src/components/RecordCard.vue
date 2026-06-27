@@ -31,12 +31,29 @@ const isEmpty = computed(
     !props.record.images.length &&
     !props.record.freeText,
 )
+
+// 跨日撰写：recordDate (日记时间) ≠ DATE(createdAt) (撰写时间)
+// 比如 6/27 凌晨写归到 6/26，这里显示「凌晨 HH:mm 写的」
+const writtenAtLabel = computed(() => {
+  if (!props.record.createdAt) return null
+  const createdDate = props.record.createdAt.slice(0, 10) // ISO 日期部分
+  if (createdDate === props.record.recordDate) return null
+  // 解析 createdAt 取 HH:mm
+  const d = new Date(props.record.createdAt)
+  const hh = d.getHours().toString().padStart(2, '0')
+  const mm = d.getMinutes().toString().padStart(2, '0')
+  const period = d.getHours() < 5 ? '凌晨' : ''
+  return `${period} ${hh}:${mm} 写的`.trim()
+})
 </script>
 
 <template>
   <article class="rounded-3xl bg-white p-5 shadow-sm">
     <header class="mb-3 flex items-baseline justify-between">
-      <p class="text-base font-medium text-mint-600">{{ record.recordDate }}</p>
+      <div>
+        <p class="text-base font-medium text-mint-600">{{ record.recordDate }}</p>
+        <p v-if="writtenAtLabel" class="mt-0.5 text-[11px] text-gray-400">{{ writtenAtLabel }}</p>
+      </div>
       <span class="text-xs text-gray-400">
         <span v-if="record.answers.length">{{ record.answers.length }} 段</span>
         <span v-if="record.freeText">{{ record.answers.length ? ' · ' : '' }}还想说</span>
