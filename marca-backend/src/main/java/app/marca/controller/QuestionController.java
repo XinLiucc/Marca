@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 @RestController
@@ -28,14 +29,32 @@ public class QuestionController {
     @GetMapping("/today")
     public DailyQuestionsResponse today(
             @AuthenticationPrincipal UserPrincipal user,
-            @RequestParam(defaultValue = "3") int count
+            @RequestParam(defaultValue = "5") int count,
+            @RequestParam(value = "_at", required = false) String atOverride
     ) {
-        if (count < 1 || count > 5) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_COUNT", "count 需在 1~5 之间");
+        if (count < 1 || count > 7) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_COUNT", "count 需在 1~7 之间");
         }
-        LocalDate today = LocalDate.now(ZONE);
-        var questions = questionService.pickDaily(user.id(), today, count)
+        LocalDateTime now = parseAt(atOverride);
+        LocalDate today = now.toLocalDate();
+        var questions = questionService.pickDaily(user.id(), today, count, now)
                 .stream().map(QuestionDto::from).toList();
         return new DailyQuestionsResponse(today, questions);
+    }
+
+    /**
+     * 测试钩子：?_at=2026-06-28T02:30 即可模拟该时刻的出题。
+     * 生产环境上线前考虑加权限或环境标志，目前仅 dev 期方便验证。
+     */
+    private LocalDateTime parseAt(String atOverride) {
+        if (atOverride == null || atOverride.isBlank()) {
+            return LocalDateTime.now(ZONE);
+        }
+        try {
+            return LocalDateTime.parse(atOverride);
+        } catch (Exception e) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_AT",
+                    "_at 需为 ISO 格式如 2026-06-28T02:30");
+        }
     }
 }

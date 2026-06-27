@@ -14,10 +14,13 @@ CREATE TABLE IF NOT EXISTS user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 问题题库
+-- tags JSON 示例：{"time": ["late_night"], "day": ["monday", "weekend"], "season": ["winter"]}
+-- 出题时按当前时段/周几/季节匹配；前 2 道偏好匹配题，其余通用题
 CREATE TABLE IF NOT EXISTS question (
   id         BIGINT PRIMARY KEY AUTO_INCREMENT,
   category   ENUM('event', 'emotion', 'future') NOT NULL,
   content    VARCHAR(255) NOT NULL,
+  tags       JSON NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
