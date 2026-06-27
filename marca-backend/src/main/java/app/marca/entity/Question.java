@@ -12,8 +12,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "question")
@@ -37,6 +41,15 @@ public class Question {
 
     @Column(nullable = false)
     private String content;
+
+    /**
+     * 场景标签。维度：time / day / season。
+     * 示例：{"time": ["late_night"], "day": ["monday", "weekend"]}
+     * null 或空 → 通用题，任何场景都可用作保底
+     */
+    @Column(columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, List<String>> tags;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
