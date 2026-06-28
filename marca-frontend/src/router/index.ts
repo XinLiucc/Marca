@@ -25,6 +25,12 @@ const router = createRouter({
       name: 'random',
       component: () => import('@/views/RandomView.vue'),
     },
+    {
+      path: '/record/:date',
+      name: 'record-detail',
+      component: () => import('@/views/RecordDetailView.vue'),
+      props: true,
+    },
   ],
 })
 

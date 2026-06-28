@@ -43,7 +43,9 @@ const yesterdayLabel = computed(() => {
   // 直接从后端给的 today.value (Asia/Shanghai 当天日期) 减一天，
   // 避免用 new Date().toISOString() 在凌晨时段被 UTC 漂移坑（中国时区 +8）
   if (!today.value) return ''
-  const [y, m, d] = today.value.split('-').map(Number)
+  const parts = today.value.split('-').map(Number)
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return ''
+  const [y, m, d] = parts as [number, number, number]
   const dt = new Date(y, m - 1, d)
   dt.setDate(dt.getDate() - 1)
   const yy = dt.getFullYear()

@@ -8,7 +8,6 @@ const total = ref(0)
 const page = ref(0)
 const size = 20
 const loading = ref(false)
-const expanded = ref<Set<number>>(new Set())
 
 async function load(reset = false) {
   if (loading.value) return
@@ -29,11 +28,6 @@ async function load(reset = false) {
 function loadMore() {
   page.value += 1
   load()
-}
-
-function toggle(id: number) {
-  if (expanded.value.has(id)) expanded.value.delete(id)
-  else expanded.value.add(id)
 }
 
 onMounted(() => load(true))
@@ -57,9 +51,14 @@ onMounted(() => load(true))
     </div>
 
     <div class="space-y-3">
-      <div v-for="r in items" :key="r.id" @click="toggle(r.id)" class="cursor-pointer">
-        <RecordCard :record="r" :mode="expanded.has(r.id) ? 'full' : 'compact'" />
-      </div>
+      <RouterLink
+        v-for="r in items"
+        :key="r.id"
+        :to="{ name: 'record-detail', params: { date: r.recordDate } }"
+        class="block transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        <RecordCard :record="r" mode="compact" />
+      </RouterLink>
     </div>
 
     <div class="mt-6 text-center">
