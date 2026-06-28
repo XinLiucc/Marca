@@ -18,6 +18,8 @@ public class RecordDto {
     private Integer voiceDuration;
     private List<ImageDto> images;
     private String freeText;
+    private String weather;
+    private List<String> moods;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -26,6 +28,7 @@ public class RecordDto {
         List<ImageDto> images = r.getImages().stream().map(ImageDto::from).toList();
         return new RecordDto(r.getId(), r.getRecordDate(), answers,
                 r.getVoiceUrl(), r.getVoiceDuration(), images, r.getFreeText(),
+                r.getWeather(), r.getMoods(),
                 r.getCreatedAt(), r.getUpdatedAt());
     }
 }

@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS record (
   voice_duration INT,
   image_url      VARCHAR(500),
   free_text      TEXT,                              -- 用户主动写的自由记录（"我还想说"）
+  weather        VARCHAR(16),                       -- 天气 key 单选，如 'sunny' / 'rainy'
+  moods          JSON,                              -- 心情 key 数组多选，如 ["happy","tired"]
   created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_user_date (user_id, record_date),

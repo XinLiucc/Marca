@@ -16,8 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -78,8 +80,26 @@ public class RecordService {
         record.setVoiceUrl(req.getVoiceUrl());
         record.setVoiceDuration(req.getVoiceDuration());
         record.setFreeText(hasFreeText ? req.getFreeText().trim() : null);
+        record.setWeather(normalizeWeather(req.getWeather()));
+        record.setMoods(normalizeMoods(req.getMoods()));
 
         return recordRepository.save(record);
+    }
+
+    private String normalizeWeather(String w) {
+        if (w == null) return null;
+        String trimmed = w.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private List<String> normalizeMoods(List<String> moods) {
+        if (moods == null || moods.isEmpty()) return null;
+        List<String> cleaned = moods.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        return cleaned.isEmpty() ? null : cleaned;
     }
 
     public Optional<Record> findToday(Long userId, LocalDate today) {
@@ -94,7 +114,14 @@ public class RecordService {
         return recordRepository.findByUserIdOrderByRecordDateDesc(userId, PageRequest.of(page, size));
     }
 
-    public Optional<Record> random(Long userId, LocalDate today) {
-        return recordRepository.findRandomExcluding(userId, today);
+    public Optional<Record> random(Long userId, LocalDate today, LocalDate extraExclude) {
+        // 永远排除「今天」（回看是面向历史的）；可再追加一个 extraExclude
+        // （比如从某天详情页点🎲，把当前看的那条也排除掉，避免抽到自己）
+        Set<LocalDate> excludes = new LinkedHashSet<>();
+        excludes.add(today);
+        if (extraExclude != null && !extraExclude.equals(today)) {
+            excludes.add(extraExclude);
+        }
+        return recordRepository.findRandomExcluding(userId, excludes);
     }
 }
