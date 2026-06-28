@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RecordDto } from '@/api/records'
+import { moodsOf, weatherOf } from '@/lib/weatherMood'
 
 const props = defineProps<{
   record: RecordDto
@@ -32,6 +33,9 @@ const isEmpty = computed(
     !props.record.freeText,
 )
 
+const weatherEmoji = computed(() => weatherOf(props.record.weather)?.emoji ?? null)
+const moodEmojis = computed(() => moodsOf(props.record.moods).map((m) => m.emoji))
+
 // 跨日撰写：recordDate (日记时间) ≠ DATE(createdAt) (撰写时间)
 // 比如 6/27 凌晨写归到 6/26，这里显示「凌晨 HH:mm 写的」
 const writtenAtLabel = computed(() => {
@@ -49,18 +53,22 @@ const writtenAtLabel = computed(() => {
 
 <template>
   <article class="rounded-3xl bg-white p-5 shadow-sm">
-    <header class="mb-3 flex items-baseline justify-between">
-      <div>
+    <header class="mb-3 flex items-baseline justify-between gap-3">
+      <div class="flex items-baseline gap-2">
         <p class="text-base font-medium text-mint-600">{{ record.recordDate }}</p>
-        <p v-if="writtenAtLabel" class="mt-0.5 text-[11px] text-gray-400">{{ writtenAtLabel }}</p>
+        <span v-if="weatherEmoji || moodEmojis.length" class="text-sm leading-none">
+          <span v-if="weatherEmoji">{{ weatherEmoji }}</span>
+          <span v-if="moodEmojis.length" class="ml-0.5">{{ moodEmojis.join('') }}</span>
+        </span>
       </div>
-      <span class="text-xs text-gray-400">
+      <span class="text-xs text-gray-400 text-right">
         <span v-if="record.answers.length">{{ record.answers.length }} 段</span>
         <span v-if="record.freeText">{{ record.answers.length ? ' · ' : '' }}还想说</span>
         <span v-if="record.voiceUrl"> · 语音</span>
         <span v-if="record.images.length"> · {{ record.images.length }} 图</span>
       </span>
     </header>
+    <p v-if="writtenAtLabel" class="-mt-2 mb-3 text-[11px] text-gray-400">{{ writtenAtLabel }}</p>
 
     <!-- compact：摘要 -->
     <template v-if="mode === 'compact'">

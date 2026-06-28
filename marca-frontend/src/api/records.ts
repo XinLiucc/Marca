@@ -27,6 +27,8 @@ export interface RecordDto {
   voiceDuration: number | null
   images: ImageDto[]
   freeText: string | null
+  weather: string | null
+  moods: string[] | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -38,6 +40,8 @@ export interface SaveRecordPayload {
   voiceDuration?: number | null
   images?: Omit<ImageDto, 'id' | 'sortOrder'>[]
   freeText?: string | null
+  weather?: string | null
+  moods?: string[]
 }
 
 export interface RecordPage {
@@ -90,9 +94,11 @@ export const recordsApi = {
       .get<RecordPage>('/api/records', { params: { page, size } })
       .then((r) => r.data)
   },
-  random() {
+  random(excludeDate?: string) {
     return http
-      .get<RecordDto | ''>('/api/records/random')
+      .get<RecordDto | ''>('/api/records/random', {
+        params: excludeDate ? { exclude: excludeDate } : undefined,
+      })
       .then((r) => (r.status === 204 ? null : (r.data as RecordDto)))
   },
   byDate(date: string) {
