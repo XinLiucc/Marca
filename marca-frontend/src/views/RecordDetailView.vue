@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { recordsApi, type RecordDto } from '@/api/records'
+import { moodsOf, weatherOf } from '@/lib/weatherMood'
 
 const props = defineProps<{
   date: string
@@ -20,6 +21,27 @@ const categoryLabel: Record<string, string> = {
   event: '事件',
   emotion: '情绪',
   future: '未来',
+}
+
+const weatherTag = computed(() => weatherOf(record.value?.weather))
+const moodTags = computed(() => moodsOf(record.value?.moods))
+
+// 是否在看今天的记录（只有今天能从这里跳到"重新写"）
+const isToday = computed(() => props.date === localTodayString())
+function localTodayString(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = (d.getMonth() + 1).toString().padStart(2, '0')
+  const day = d.getDate().toString().padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function goEdit() {
+  router.push({ path: '/', query: { edit: '1' } })
+}
+
+function goWriteToday() {
+  router.push('/')
 }
 
 const writtenAtLabel = computed(() => {
@@ -55,15 +77,14 @@ async function load(date: string) {
 async function pickRandom() {
   if (randoming.value) return
   randoming.value = true
+  errorMsg.value = null
   try {
-    const rec = await recordsApi.random()
-    if (rec && rec.recordDate !== props.date) {
+    // 把当前正在看的这条也加进 exclude，后端再叠加 today，自然不抽到重复
+    const rec = await recordsApi.random(props.date)
+    if (rec) {
       router.replace({ name: 'record-detail', params: { date: rec.recordDate } })
-    } else if (rec) {
-      // 抽到同一条（小概率），强提示但不跳转
-      errorMsg.value = '又抽到同一条了，再点一下试试'
     } else {
-      errorMsg.value = '还没有其他历史记录可以随机'
+      errorMsg.value = '没有其他历史记录可以随机了'
     }
   } finally {
     randoming.value = false
@@ -98,8 +119,18 @@ watch(() => props.date, (d) => load(d))
     <!-- 不存在 -->
     <div v-else-if="notFound" class="rounded-3xl bg-white p-10 text-center">
       <p class="mb-2 text-base text-mint-600">{{ date }}</p>
-      <p class="mb-6 text-sm text-gray-500">这天没有日记</p>
+      <p class="mb-6 text-sm text-gray-500">
+        {{ isToday ? '今天还没写' : '这天没有日记' }}
+      </p>
+      <button
+        v-if="isToday"
+        class="rounded-2xl bg-mint-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
+        @click="goWriteToday"
+      >
+        去写今天的
+      </button>
       <RouterLink
+        v-else
         to="/timeline"
         class="inline-block rounded-2xl bg-mint-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
       >
@@ -118,6 +149,18 @@ watch(() => props.date, (d) => load(d))
       <header class="mb-6">
         <h1 class="text-3xl font-bold text-mint-600">{{ record.recordDate }}</h1>
         <p v-if="writtenAtLabel" class="mt-1 text-xs text-gray-400">{{ writtenAtLabel }}</p>
+        <div v-if="weatherTag || moodTags.length" class="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+          <span v-if="weatherTag" class="rounded-full bg-mint-50 px-3 py-1">
+            {{ weatherTag.emoji }} {{ weatherTag.label }}
+          </span>
+          <span
+            v-for="m in moodTags"
+            :key="m.key"
+            class="rounded-full bg-mint-50 px-3 py-1"
+          >
+            {{ m.emoji }} {{ m.label }}
+          </span>
+        </div>
       </header>
 
       <!-- 问答 -->
@@ -170,17 +213,25 @@ watch(() => props.date, (d) => load(d))
         </div>
       </section>
 
-      <!-- 底部 random -->
+      <!-- 底部操作：今天 = 重新写；过去某天 = 再来一条（回看心智不混 编辑心智）-->
       <div class="mt-8 text-center">
         <button
+          v-if="isToday"
+          class="rounded-2xl bg-mint-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
+          @click="goEdit"
+        >
+          重新写
+        </button>
+        <button
+          v-else
           :disabled="randoming"
-          class="rounded-2xl bg-white px-5 py-2 text-sm text-mint-600 shadow-sm transition hover:bg-mint-50 disabled:opacity-60"
+          class="rounded-2xl bg-white px-6 py-2.5 text-sm text-mint-600 shadow-sm transition hover:bg-mint-50 disabled:opacity-60"
           @click="pickRandom"
         >
-          {{ randoming ? '抽一条…' : '🎲 再来一条' }}
+          {{ randoming ? '寻一段往日…' : '重逢往日' }}
         </button>
-        <p v-if="errorMsg" class="mt-3 text-xs text-red-500">{{ errorMsg }}</p>
       </div>
+      <p v-if="errorMsg" class="mt-3 text-center text-xs text-red-500">{{ errorMsg }}</p>
     </template>
   </main>
 </template>
