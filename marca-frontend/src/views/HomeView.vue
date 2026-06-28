@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { questionsApi, type Question } from '@/api/questions'
 import { recordsApi, type ImageDto, type RecordDto } from '@/api/records'
 import VoiceRecorder from '@/components/VoiceRecorder.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
+import WeatherMoodPicker from '@/components/WeatherMoodPicker.vue'
 
-type Mode = 'loading' | 'recorded' | 'answering' | 'finishing' | 'error'
+// HomeView 现在只管写入：answering 一次一个问题 → finishing 收尾保存。
+// 「回看今天的记录」职责完全交给 RecordDetailView (/record/:date)。
+// 进入时若今天已记录且 query 无 ?edit=1 → 直接 redirect 到详情页。
+// 详情页「重新写」按钮回来时带 ?edit=1，跳过 redirect 进编辑流。
+type Mode = 'loading' | 'answering' | 'finishing' | 'error'
 
 const auth = useAuthStore()
+const router = useRouter()
+const route = useRoute()
 
 const mode = ref<Mode>('loading')
 const errorMsg = ref<string | null>(null)
@@ -21,6 +29,10 @@ const countPickerOpen = ref(false)
 const questions = ref<Question[]>([])
 const answers = ref<Record<number, string>>({})
 const currentIndex = ref(0)
+
+// 天气 / 心情（answering 顶部，单选 / 多选）
+const weather = ref<string | null>(null)
+const moods = ref<string[]>([])
 
 // finishing 状态
 const freeText = ref<string>('')
@@ -90,12 +102,19 @@ onMounted(loadToday)
 
 async function loadToday() {
   mode.value = 'loading'
+  const wantsEdit = route.query.edit === '1'
   try {
     const rec = await recordsApi.today()
     if (rec) {
       todayRecord.value = rec
       today.value = rec.recordDate
-      mode.value = 'recorded'
+      if (!wantsEdit) {
+        // 今天已记录 + 不是来编辑 → 跳详情页回看
+        router.replace({ name: 'record-detail', params: { date: rec.recordDate } })
+        return
+      }
+      // wantsEdit → 直接进编辑流，预填已有内容
+      await enterAnswering()
     } else {
       await loadQuestions(desiredCount.value)
       mode.value = 'answering'
@@ -125,13 +144,15 @@ async function changeCount(n: number) {
 }
 
 async function enterAnswering() {
-  // 从「已记录」回去重写：预填已有的语音 / 图 / 自由文本；
+  // 从「已记录」回去重写：预填已有的语音 / 图 / 自由文本 / 天气 / 心情；
   // 问答部分：有则回显，没有则按当前 desiredCount 抓新的
   if (todayRecord.value) {
     freeText.value = todayRecord.value.freeText ?? ''
     voiceUrl.value = todayRecord.value.voiceUrl
     voiceDuration.value = todayRecord.value.voiceDuration
     images.value = todayRecord.value.images.map((img) => ({ ...img }))
+    weather.value = todayRecord.value.weather ?? null
+    moods.value = todayRecord.value.moods ? [...todayRecord.value.moods] : []
     const existing = todayRecord.value.answers
     if (existing.length > 0) {
       questions.value = existing.map((a) => ({
@@ -220,14 +241,13 @@ async function onSubmit() {
         bytes: img.bytes,
       })),
       freeText: freeText.value.trim() || null,
+      weather: weather.value,
+      moods: moods.value,
     }
     const saved = await recordsApi.save(payload)
-    todayRecord.value = saved
-    // 如果保存到了昨天，本会话里的 todayRecord 概念其实是「昨天的」，
-    // 这里依然把 mode 切到 recorded 让用户看到自己写完的成果；
-    // 用户下次进首页会按真实今天重新加载
-    mode.value = 'recorded'
     isLateNightWrite.value = false
+    // 保存成功直接跳详情页 —— 写入与回看职责分离，详情页统一展示
+    router.replace({ name: 'record-detail', params: { date: saved.recordDate } })
   } catch (e) {
     errorMsg.value = axios.isAxiosError(e) ? (e.response?.data?.message ?? '保存失败') : '保存失败'
   } finally {
@@ -275,50 +295,19 @@ watch(questions, () => {
       {{ errorMsg }}
     </div>
 
-    <!-- 已记录 -->
-    <template v-else-if="mode === 'recorded' && todayRecord">
-      <p class="mb-4 text-sm text-mint-600">今天已经记录过啦 · 想改的话点底下「重新写」</p>
-      <div class="space-y-3">
-        <article
-          v-for="(a, i) in todayRecord.answers"
-          :key="a.id ?? i"
-          class="rounded-3xl bg-white p-5 shadow-sm"
-        >
-          <header class="mb-2 flex items-center gap-2 text-xs text-mint-600">
-            <span class="rounded-full bg-mint-100 px-2 py-0.5">{{ a.category ? categoryLabel[a.category as Question['category']] : '—' }}</span>
-            <span class="text-gray-400">{{ a.question }}</span>
-          </header>
-          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ a.answer }}</p>
-        </article>
-        <section v-if="todayRecord.freeText" class="rounded-3xl bg-white p-5 shadow-sm">
-          <header class="mb-2 flex items-center gap-2 text-xs text-mint-600">
-            <span class="rounded-full bg-mint-100 px-2 py-0.5">还想说</span>
-          </header>
-          <p class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{{ todayRecord.freeText }}</p>
-        </section>
-        <section v-if="todayRecord.voiceUrl" class="rounded-3xl bg-white p-5 shadow-sm">
-          <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
-            <span class="rounded-full bg-mint-100 px-2 py-0.5">语音</span>
-          </header>
-          <audio :src="todayRecord.voiceUrl" controls class="w-full" />
-        </section>
-        <section v-if="todayRecord.images.length" class="rounded-3xl bg-white p-5 shadow-sm">
-          <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
-            <span class="rounded-full bg-mint-100 px-2 py-0.5">图片</span>
-          </header>
-          <div class="grid grid-cols-3 gap-2">
-            <img v-for="img in todayRecord.images" :key="img.id ?? img.url" :src="img.url" class="aspect-square w-full rounded-2xl object-cover" />
-          </div>
-        </section>
-      </div>
-      <button class="mt-6 w-full rounded-2xl bg-white py-3 text-sm font-medium text-mint-600 shadow-sm transition hover:bg-mint-50" @click="enterAnswering">
-        重新写
-      </button>
-    </template>
-
     <!-- answering：一次一个 -->
     <template v-else-if="mode === 'answering'">
-      <!-- 顶部：圆点进度 + 数量调节 -->
+      <!-- 顶部：天气 / 心情 -->
+      <div class="mb-4">
+        <WeatherMoodPicker
+          :weather="weather"
+          :moods="moods"
+          @update:weather="(v) => (weather = v)"
+          @update:moods="(v) => (moods = v)"
+        />
+      </div>
+
+      <!-- 圆点进度 + 数量调节 -->
       <div class="mb-8 flex items-center justify-between">
         <div class="flex gap-1.5">
           <span

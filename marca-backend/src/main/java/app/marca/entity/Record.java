@@ -17,6 +17,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,6 +54,15 @@ public class Record {
 
     @Column(name = "free_text", columnDefinition = "TEXT")
     private String freeText;
+
+    /** 天气 key 单选，如 "sunny" / "rainy"，由前端映射为 emoji + 中文 */
+    @Column(name = "weather", length = 16)
+    private String weather;
+
+    /** 心情 key 数组多选，如 ["happy","tired"]，存 JSON */
+    @Column(name = "moods", columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<String> moods;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

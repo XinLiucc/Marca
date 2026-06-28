@@ -83,9 +83,12 @@ public class RecordController {
     }
 
     @GetMapping("/random")
-    public ResponseEntity<RecordDto> random(@AuthenticationPrincipal UserPrincipal user) {
+    public ResponseEntity<RecordDto> random(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestParam(value = "exclude", required = false) LocalDate exclude
+    ) {
         LocalDate today = LocalDate.now(ZONE);
-        return recordService.random(user.id(), today)
+        return recordService.random(user.id(), today, exclude)
                 .map(RecordDto::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());

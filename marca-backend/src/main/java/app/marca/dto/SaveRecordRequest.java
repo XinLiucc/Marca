@@ -25,4 +25,10 @@ public class SaveRecordRequest {
 
     /** 用户自由记录的文本（"我还想说"），可空 */
     private String freeText;
+
+    /** 天气 key（如 "sunny"），可空 */
+    private String weather;
+
+    /** 心情 key 列表（如 ["happy","tired"]），可空 */
+    private List<String> moods;
 }
