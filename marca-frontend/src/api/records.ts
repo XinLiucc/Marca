@@ -94,6 +94,11 @@ export const recordsApi = {
       .get<RecordPage>('/api/records', { params: { page, size } })
       .then((r) => r.data)
   },
+  month(year: number, month: number) {
+    return http
+      .get<RecordDto[]>('/api/records/month', { params: { year, month } })
+      .then((r) => r.data)
+  },
   random(excludeDate?: string) {
     return http
       .get<RecordDto | ''>('/api/records/random', {

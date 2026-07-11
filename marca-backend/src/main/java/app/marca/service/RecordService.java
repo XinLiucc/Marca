@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -112,6 +113,11 @@ public class RecordService {
 
     public Page<Record> list(Long userId, int page, int size) {
         return recordRepository.findByUserIdOrderByRecordDateDesc(userId, PageRequest.of(page, size));
+    }
+
+    public List<Record> byMonth(Long userId, YearMonth month) {
+        return recordRepository.findByUserIdAndRecordDateBetweenOrderByRecordDateDesc(
+                userId, month.atDay(1), month.atEndOfMonth());
     }
 
     public Optional<Record> random(Long userId, LocalDate today, LocalDate extraExclude) {

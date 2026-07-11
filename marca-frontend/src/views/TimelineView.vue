@@ -1,36 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { recordsApi, type RecordDto } from '@/api/records'
 import RecordCard from '@/components/RecordCard.vue'
+import MonthHeatmap from '@/components/MonthHeatmap.vue'
+
+const now = new Date()
+const viewYear = ref(now.getFullYear())
+const viewMonth = ref(now.getMonth() + 1) // 1-12
 
 const items = ref<RecordDto[]>([])
-const total = ref(0)
-const page = ref(0)
-const size = 20
 const loading = ref(false)
 
-async function load(reset = false) {
-  if (loading.value) return
+async function load() {
   loading.value = true
-  if (reset) {
-    items.value = []
-    page.value = 0
-  }
   try {
-    const res = await recordsApi.list(page.value, size)
-    total.value = res.total
-    items.value.push(...res.items)
+    items.value = await recordsApi.month(viewYear.value, viewMonth.value)
   } finally {
     loading.value = false
   }
 }
 
-function loadMore() {
-  page.value += 1
-  load()
+function prevMonth() {
+  if (viewMonth.value === 1) {
+    viewMonth.value = 12
+    viewYear.value -= 1
+  } else {
+    viewMonth.value -= 1
+  }
 }
 
-onMounted(() => load(true))
+function nextMonth() {
+  if (viewMonth.value === 12) {
+    viewMonth.value = 1
+    viewYear.value += 1
+  } else {
+    viewMonth.value += 1
+  }
+}
+
+watch([viewYear, viewMonth], load)
+onMounted(load)
 </script>
 
 <template>
@@ -38,7 +47,7 @@ onMounted(() => load(true))
     <header class="mb-6 flex items-baseline justify-between">
       <div>
         <h1 class="text-xl font-bold text-mint-600">时间轴</h1>
-        <p class="text-xs text-gray-500">共 {{ total }} 条记录</p>
+        <p class="text-xs text-gray-500">这个月 {{ items.length }} 条记录</p>
       </div>
       <nav class="flex gap-2 text-xs text-gray-500">
         <RouterLink to="/" class="rounded-full px-3 py-1 hover:bg-mint-50">今日</RouterLink>
@@ -46,8 +55,17 @@ onMounted(() => load(true))
       </nav>
     </header>
 
+    <MonthHeatmap
+      class="mb-6"
+      :year="viewYear"
+      :month="viewMonth"
+      :records="items"
+      @prev="prevMonth"
+      @next="nextMonth"
+    />
+
     <div v-if="!loading && !items.length" class="rounded-3xl bg-white p-8 text-center text-sm text-gray-400">
-      还没有任何记录，回首页写一条吧
+      这个月还没有记录
     </div>
 
     <div class="space-y-3">
@@ -59,18 +77,6 @@ onMounted(() => load(true))
       >
         <RecordCard :record="r" mode="compact" />
       </RouterLink>
-    </div>
-
-    <div class="mt-6 text-center">
-      <button
-        v-if="items.length < total"
-        :disabled="loading"
-        class="rounded-2xl bg-white px-6 py-2 text-sm text-mint-600 shadow-sm transition hover:bg-mint-50 disabled:opacity-60"
-        @click="loadMore"
-      >
-        {{ loading ? '加载中…' : '加载更多' }}
-      </button>
-      <p v-else-if="items.length > 0" class="text-xs text-gray-400">没有更多了</p>
     </div>
   </main>
 </template>
