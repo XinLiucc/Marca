@@ -45,12 +45,7 @@ const submitting = ref(false)
 // 夜猫子模式：凌晨 < 5:00 时显示「这其实是昨天写的吗」勾选项
 // 勾上 → recordDate 写成前一天
 const isLateNightWrite = ref(false)              // 是否勾选「归到昨天」
-const forceNightOwl = ref(false)                 // 测试钩子：强制显示提示（dev 验收用）
-const showNightOwlPrompt = computed(() => {
-  if (forceNightOwl.value) return true
-  const h = new Date().getHours()
-  return h < 5
-})
+const showNightOwlPrompt = computed(() => new Date().getHours() < 5)
 const yesterdayLabel = computed(() => {
   // 直接从后端给的 today.value (Asia/Shanghai 当天日期) 减一天，
   // 避免用 new Date().toISOString() 在凌晨时段被 UTC 漂移坑（中国时区 +8）
@@ -275,13 +270,6 @@ watch(questions, () => {
         <RouterLink to="/timeline" class="rounded-full px-3 py-1 hover:bg-mint-50">时间轴</RouterLink>
         <RouterLink to="/random" class="rounded-full px-3 py-1 hover:bg-mint-50">随机</RouterLink>
         <button class="rounded-full px-3 py-1 hover:bg-mint-50" @click="auth.logout(); $router.push('/login')">退出</button>
-        <!-- DEV: 测试钩子，强制显示夜猫子勾选项；生产前删 -->
-        <button
-          class="rounded-full px-2 py-1 text-[10px] opacity-30 hover:opacity-100"
-          :class="forceNightOwl ? 'bg-mint-500 text-white' : 'bg-gray-200'"
-          @click="forceNightOwl = !forceNightOwl"
-          title="DEV: 强制显示夜猫子勾选"
-        >🌙</button>
       </nav>
     </header>
 
