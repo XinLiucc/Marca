@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/records")
@@ -80,6 +82,17 @@ public class RecordController {
         var p = recordService.list(user.id(), page, size);
         var items = p.getContent().stream().map(RecordDto::from).toList();
         return new RecordPage(p.getTotalElements(), page, size, items);
+    }
+
+    @GetMapping("/month")
+    public List<RecordDto> month(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        return recordService.byMonth(user.id(), YearMonth.of(year, month)).stream()
+                .map(RecordDto::from)
+                .toList();
     }
 
     @GetMapping("/random")
