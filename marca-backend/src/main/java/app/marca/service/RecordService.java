@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -26,10 +28,21 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RecordService {
 
+    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+
     private final RecordRepository recordRepository;
 
     @Transactional
     public Record save(Long userId, SaveRecordRequest req) {
+        LocalDate today = LocalDate.now(ZONE);
+        if (req.getRecordDate().isAfter(today)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "FUTURE_DATE", "还没发生的日子写不了");
+        }
+        if (!BackfillPolicy.isWithinWindow(today, req.getRecordDate())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "OUT_OF_BACKFILL_WINDOW",
+                    "太久之前的日子不能补写了");
+        }
+
         boolean hasAnswer = req.getAnswers() != null && !req.getAnswers().isEmpty();
         boolean hasVoice = req.getVoiceUrl() != null && !req.getVoiceUrl().isBlank();
         boolean hasImage = req.getImages() != null && !req.getImages().isEmpty();
@@ -84,6 +97,10 @@ public class RecordService {
         record.setWeather(normalizeWeather(req.getWeather()));
         record.setMoods(normalizeMoods(req.getMoods()));
 
+        // 显式刷新，不能只靠 @PreUpdate：这次编辑如果只动了 answers/images 子表，
+        // Record 自身标量字段没变化，Hibernate 脏检查不会给它发 UPDATE，updatedAt 就刷不出来
+        record.setUpdatedAt(LocalDateTime.now());
+
         return recordRepository.save(record);
     }
 
@@ -109,6 +126,14 @@ public class RecordService {
 
     public Optional<Record> findByDate(Long userId, LocalDate date) {
         return recordRepository.findByUserIdAndRecordDate(userId, date);
+    }
+
+    // 删除不受补写窗口限制：删除只是移除已写内容，不会像补写/编辑那样伪造发生时间
+    @Transactional
+    public void deleteByDate(Long userId, LocalDate date) {
+        Record record = recordRepository.findByUserIdAndRecordDate(userId, date)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "这条记录不存在"));
+        recordRepository.delete(record);
     }
 
     public Page<Record> list(Long userId, int page, int size) {
