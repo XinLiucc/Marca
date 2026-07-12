@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { recordsApi, type RecordDto } from '@/api/records'
 import { moodsOf, weatherOf } from '@/lib/weatherMood'
+import { writtenAtLabel as computeWrittenAtLabel } from '@/lib/writtenAt'
 
 const props = defineProps<{
   date: string
@@ -44,16 +45,7 @@ function goWriteToday() {
   router.push('/')
 }
 
-const writtenAtLabel = computed(() => {
-  if (!record.value?.createdAt) return null
-  const createdDate = record.value.createdAt.slice(0, 10)
-  if (createdDate === record.value.recordDate) return null
-  const d = new Date(record.value.createdAt)
-  const hh = d.getHours().toString().padStart(2, '0')
-  const mm = d.getMinutes().toString().padStart(2, '0')
-  const period = d.getHours() < 5 ? '凌晨' : ''
-  return `${period} ${hh}:${mm} 写的`.trim()
-})
+const writtenAtLabel = computed(() => (record.value ? computeWrittenAtLabel(record.value) : null))
 
 async function load(date: string) {
   loading.value = true

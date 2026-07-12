@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { RecordDto } from '@/api/records'
 import { moodsOf, weatherOf } from '@/lib/weatherMood'
+import { writtenAtLabel as computeWrittenAtLabel } from '@/lib/writtenAt'
 
 const props = defineProps<{
   record: RecordDto
@@ -36,19 +37,7 @@ const isEmpty = computed(
 const weatherEmoji = computed(() => weatherOf(props.record.weather)?.emoji ?? null)
 const moodEmojis = computed(() => moodsOf(props.record.moods).map((m) => m.emoji))
 
-// 跨日撰写：recordDate (日记时间) ≠ DATE(createdAt) (撰写时间)
-// 比如 6/27 凌晨写归到 6/26，这里显示「凌晨 HH:mm 写的」
-const writtenAtLabel = computed(() => {
-  if (!props.record.createdAt) return null
-  const createdDate = props.record.createdAt.slice(0, 10) // ISO 日期部分
-  if (createdDate === props.record.recordDate) return null
-  // 解析 createdAt 取 HH:mm
-  const d = new Date(props.record.createdAt)
-  const hh = d.getHours().toString().padStart(2, '0')
-  const mm = d.getMinutes().toString().padStart(2, '0')
-  const period = d.getHours() < 5 ? '凌晨' : ''
-  return `${period} ${hh}:${mm} 写的`.trim()
-})
+const writtenAtLabel = computed(() => computeWrittenAtLabel(props.record))
 </script>
 
 <template>
