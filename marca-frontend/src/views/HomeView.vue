@@ -23,6 +23,24 @@ const mode = ref<Mode>('loading')
 const errorMsg = ref<string | null>(null)
 const today = ref<string>('')
 
+// 补写模式：从详情页「补写这一天」带 ?backfill=YYYY-MM-DD 过来（那天是空的，走全新出题）
+const backfillDate = computed(() => {
+  const q = route.query.backfill
+  return typeof q === 'string' ? q : null
+})
+const isBackfillMode = computed(() => backfillDate.value !== null)
+
+// 编辑过去模式：从详情页「编辑」带 ?editDate=YYYY-MM-DD 过来（那天已经写过，预填已有内容）
+const editPastDate = computed(() => {
+  const q = route.query.editDate
+  return typeof q === 'string' ? q : null
+})
+const isEditPastMode = computed(() => editPastDate.value !== null)
+
+// 补写 + 编辑过去，两种模式下 recordDate 都是固定的目标日期，不走今天/夜猫子那套逻辑
+const isPastWriteMode = computed(() => isBackfillMode.value || isEditPastMode.value)
+const pastTargetDate = computed(() => backfillDate.value ?? editPastDate.value)
+
 // answering 状态
 const desiredCount = ref(5)
 const countPickerOpen = ref(false)
@@ -99,6 +117,25 @@ async function loadToday() {
   mode.value = 'loading'
   const wantsEdit = route.query.edit === '1'
   try {
+    if (isEditPastMode.value) {
+      const rec = await recordsApi.byDate(editPastDate.value!)
+      if (!rec) {
+        errorMsg.value = '这条记录好像不见了'
+        mode.value = 'error'
+        return
+      }
+      todayRecord.value = rec
+      today.value = rec.recordDate
+      await prefillFromRecord(rec)
+      mode.value = 'answering'
+      return
+    }
+    if (isBackfillMode.value) {
+      // 补写目标日期在 RecordDetailView 已确认过是空的、且在窗口内，这里不用再查一遍
+      await loadQuestions(desiredCount.value)
+      mode.value = 'answering'
+      return
+    }
     const rec = await recordsApi.today()
     if (rec) {
       todayRecord.value = rec
@@ -115,13 +152,15 @@ async function loadToday() {
       mode.value = 'answering'
     }
   } catch (e) {
-    errorMsg.value = '加载失败，稍后再试'
+    errorMsg.value = axios.isAxiosError(e) ? (e.response?.data?.message ?? '加载失败，稍后再试') : '加载失败，稍后再试'
     mode.value = 'error'
   }
 }
 
 async function loadQuestions(n: number) {
-  const res = await questionsApi.today(n)
+  const res = isPastWriteMode.value
+    ? await questionsApi.backfill(pastTargetDate.value!, n)
+    : await questionsApi.today(n)
   questions.value = res.questions
   today.value = res.date
   answers.value = Object.fromEntries(res.questions.map((q) => [q.id, '']))
@@ -138,29 +177,33 @@ async function changeCount(n: number) {
   await loadQuestions(n)
 }
 
+// 预填一条已有记录的语音 / 图 / 自由文本 / 天气 / 心情 / 问答；
+// 问答部分：有则回显，没有则按当前 desiredCount 抓新的（今天重写、编辑过去某天都走这条路）
+async function prefillFromRecord(rec: RecordDto) {
+  freeText.value = rec.freeText ?? ''
+  voiceUrl.value = rec.voiceUrl
+  voiceDuration.value = rec.voiceDuration
+  images.value = rec.images.map((img) => ({ ...img }))
+  weather.value = rec.weather ?? null
+  moods.value = rec.moods ? [...rec.moods] : []
+  const existing = rec.answers
+  if (existing.length > 0) {
+    questions.value = existing.map((a) => ({
+      id: a.questionId ?? -1,
+      category: (a.category ?? 'event') as Question['category'],
+      content: a.question,
+    }))
+    answers.value = Object.fromEntries(existing.map((a) => [a.questionId ?? -1, a.answer]))
+    desiredCount.value = questions.value.length
+    currentIndex.value = 0
+  } else {
+    await loadQuestions(desiredCount.value)
+  }
+}
+
 async function enterAnswering() {
-  // 从「已记录」回去重写：预填已有的语音 / 图 / 自由文本 / 天气 / 心情；
-  // 问答部分：有则回显，没有则按当前 desiredCount 抓新的
   if (todayRecord.value) {
-    freeText.value = todayRecord.value.freeText ?? ''
-    voiceUrl.value = todayRecord.value.voiceUrl
-    voiceDuration.value = todayRecord.value.voiceDuration
-    images.value = todayRecord.value.images.map((img) => ({ ...img }))
-    weather.value = todayRecord.value.weather ?? null
-    moods.value = todayRecord.value.moods ? [...todayRecord.value.moods] : []
-    const existing = todayRecord.value.answers
-    if (existing.length > 0) {
-      questions.value = existing.map((a) => ({
-        id: a.questionId ?? -1,
-        category: (a.category ?? 'event') as Question['category'],
-        content: a.question,
-      }))
-      answers.value = Object.fromEntries(existing.map((a) => [a.questionId ?? -1, a.answer]))
-      desiredCount.value = questions.value.length
-      currentIndex.value = 0
-    } else {
-      await loadQuestions(desiredCount.value)
-    }
+    await prefillFromRecord(todayRecord.value)
   }
   mode.value = 'answering'
 }
@@ -214,8 +257,10 @@ async function onSubmit() {
   submitting.value = true
   errorMsg.value = null
   try {
-    // 夜猫子勾选时把 recordDate 改成昨天；否则按 today.value（来自 questions/today 后端返回的 date）
-    const effectiveDate = isLateNightWrite.value ? yesterdayLabel.value : today.value
+    // 夜猫子勾选时把 recordDate 改成昨天；补写模式下 today.value 就是目标日期；
+    // 否则按 today.value（来自 questions/today 后端返回的 date）
+    const effectiveDate =
+      !isPastWriteMode.value && isLateNightWrite.value ? yesterdayLabel.value : today.value
     const payload = {
       recordDate: effectiveDate,
       answers: questions.value
@@ -264,7 +309,15 @@ watch(questions, () => {
     <header class="mb-8 flex items-end justify-between">
       <div>
         <p class="text-sm text-gray-500">{{ today || '今天' }}</p>
-        <h1 class="text-2xl font-bold text-mint-600">你好，{{ auth.nickname ?? '默刻用户' }}</h1>
+        <h1 class="text-2xl font-bold text-mint-600">
+          {{
+            isBackfillMode
+              ? '补写这一天'
+              : isEditPastMode
+                ? '编辑这一天'
+                : `你好，${auth.nickname ?? '默刻用户'}`
+          }}
+        </h1>
       </div>
       <nav class="flex items-center gap-2 text-xs text-gray-500">
         <RouterLink to="/timeline" class="rounded-full px-3 py-1 hover:bg-mint-50">时间轴</RouterLink>
@@ -449,7 +502,7 @@ watch(questions, () => {
 
       <!-- 夜猫子勾选：凌晨 < 5:00 出现，可勾上将日记归到昨天 -->
       <label
-        v-if="showNightOwlPrompt"
+        v-if="showNightOwlPrompt && !isPastWriteMode"
         class="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl bg-mint-50/60 px-4 py-3 text-sm text-gray-600 transition hover:bg-mint-50"
       >
         <input
@@ -468,7 +521,15 @@ watch(questions, () => {
         class="mt-6 w-full rounded-2xl bg-mint-500 py-3 text-base font-medium text-white shadow-sm transition hover:bg-mint-600 disabled:bg-mint-300 disabled:opacity-70"
         @click="onSubmit"
       >
-        {{ submitting ? '保存中…' : '保存今日记录' }}
+        {{
+          submitting
+            ? '保存中…'
+            : isBackfillMode
+              ? '保存这一天'
+              : isEditPastMode
+                ? '保存修改'
+                : '保存今日记录'
+        }}
       </button>
     </template>
   </main>

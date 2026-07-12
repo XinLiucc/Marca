@@ -19,4 +19,9 @@ export const questionsApi = {
       .get<DailyQuestionsResponse>('/api/questions/today', { params: { count } })
       .then((r) => r.data)
   },
+  backfill(date: string, count = 3) {
+    return http
+      .get<DailyQuestionsResponse>('/api/questions/backfill', { params: { date, count } })
+      .then((r) => r.data)
+  },
 }

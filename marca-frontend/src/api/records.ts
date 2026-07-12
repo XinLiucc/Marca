@@ -111,4 +111,7 @@ export const recordsApi = {
       .get<RecordDto | ''>(`/api/records/${date}`)
       .then((r) => (r.status === 204 ? null : (r.data as RecordDto)))
   },
+  remove(date: string) {
+    return http.delete(`/api/records/${date}`)
+  },
 }
