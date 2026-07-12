@@ -28,7 +28,7 @@ class RecordServiceTest {
         // given：六个内容来源（answers/voice/images/freeText/weather/moods 里
         // 真正判断的是前四个）全是空的请求，只填了必填的 recordDate
         SaveRecordRequest req = new SaveRecordRequest();
-        req.setRecordDate(LocalDate.of(2026, 7, 11));
+        req.setRecordDate(LocalDate.now());
 
         // when + then：调用 save 应该抛出 ApiException，而不是真的存进数据库
         ApiException ex = assertThrows(ApiException.class, () -> recordService.save(1L, req));

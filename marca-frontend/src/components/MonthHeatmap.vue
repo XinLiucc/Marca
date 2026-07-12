@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RecordDto } from '@/api/records'
+import { canBackfill } from '@/lib/backfillWindow'
 
 const props = defineProps<{
   year: number
@@ -33,6 +34,7 @@ interface Cell {
   date: string | null
   day: number | null
   hasRecord: boolean
+  canBackfill: boolean
   isToday: boolean
 }
 
@@ -41,16 +43,23 @@ const cells = computed<Cell[]>(() => {
   const daysInMonth = new Date(props.year, props.month, 0).getDate()
   const list: Cell[] = []
   for (let i = 0; i < firstWeekday; i++) {
-    list.push({ date: null, day: null, hasRecord: false, isToday: false })
+    list.push({ date: null, day: null, hasRecord: false, canBackfill: false, isToday: false })
   }
   for (let d = 1; d <= daysInMonth; d++) {
     const mm = props.month.toString().padStart(2, '0')
     const dd = d.toString().padStart(2, '0')
     const date = `${props.year}-${mm}-${dd}`
-    list.push({ date, day: d, hasRecord: recordDates.value.has(date), isToday: date === today })
+    const hasRecord = recordDates.value.has(date)
+    list.push({
+      date,
+      day: d,
+      hasRecord,
+      canBackfill: !hasRecord && canBackfill(date),
+      isToday: date === today,
+    })
   }
   while (list.length % 7 !== 0) {
-    list.push({ date: null, day: null, hasRecord: false, isToday: false })
+    list.push({ date: null, day: null, hasRecord: false, canBackfill: false, isToday: false })
   }
   return list
 })
@@ -81,20 +90,24 @@ const cells = computed<Cell[]>(() => {
       <template v-for="(cell, i) in cells" :key="i">
         <div v-if="!cell.date" />
         <RouterLink
-          v-else-if="cell.hasRecord"
+          v-else
           :to="{ name: 'record-detail', params: { date: cell.date } }"
-          class="flex aspect-square items-center justify-center rounded-lg bg-mint-400 text-xs font-medium text-white transition hover:bg-mint-500"
-          :class="{ 'ring-2 ring-mint-600 ring-offset-1': cell.isToday }"
+          class="flex aspect-square items-center justify-center rounded-lg text-xs transition"
+          :class="[
+            cell.hasRecord
+              ? 'bg-mint-400 font-medium text-white hover:bg-mint-500'
+              : cell.canBackfill
+              ? 'border border-dashed border-mint-300 text-mint-400 hover:bg-mint-50'
+              : 'text-gray-300 hover:bg-mint-50/60',
+            cell.isToday
+              ? cell.hasRecord
+                ? 'ring-2 ring-mint-600 ring-offset-1'
+                : 'ring-2 ring-mint-200 ring-offset-1'
+              : '',
+          ]"
         >
           {{ cell.day }}
         </RouterLink>
-        <div
-          v-else
-          class="flex aspect-square items-center justify-center rounded-lg text-xs text-gray-300"
-          :class="{ 'ring-2 ring-mint-200 ring-offset-1': cell.isToday }"
-        >
-          {{ cell.day }}
-        </div>
       </template>
     </div>
   </div>

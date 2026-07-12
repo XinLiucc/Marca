@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { recordsApi, type RecordDto } from '@/api/records'
 import { moodsOf, weatherOf } from '@/lib/weatherMood'
+import { writtenAtLabel as computeWrittenAtLabel } from '@/lib/writtenAt'
+import { canBackfill as computeCanBackfill } from '@/lib/backfillWindow'
 
 const props = defineProps<{
   date: string
@@ -40,20 +42,21 @@ function goEdit() {
   router.push({ path: '/', query: { edit: '1' } })
 }
 
+function goEditPast() {
+  router.push({ path: '/', query: { editDate: props.date } })
+}
+
 function goWriteToday() {
   router.push('/')
 }
 
-const writtenAtLabel = computed(() => {
-  if (!record.value?.createdAt) return null
-  const createdDate = record.value.createdAt.slice(0, 10)
-  if (createdDate === record.value.recordDate) return null
-  const d = new Date(record.value.createdAt)
-  const hh = d.getHours().toString().padStart(2, '0')
-  const mm = d.getMinutes().toString().padStart(2, '0')
-  const period = d.getHours() < 5 ? '凌晨' : ''
-  return `${period} ${hh}:${mm} 写的`.trim()
-})
+const canBackfill = computed(() => computeCanBackfill(props.date))
+
+function goBackfill() {
+  router.push({ path: '/', query: { backfill: props.date } })
+}
+
+const writtenAtLabel = computed(() => (record.value ? computeWrittenAtLabel(record.value) : null))
 
 async function load(date: string) {
   loading.value = true
@@ -88,6 +91,32 @@ async function pickRandom() {
     }
   } finally {
     randoming.value = false
+  }
+}
+
+// 删除不受补写窗口限制（删除不伪造历史），但要二次确认——不可逆操作
+const confirmingDelete = ref(false)
+const deleting = ref(false)
+
+function askDelete() {
+  confirmingDelete.value = true
+}
+
+function cancelDelete() {
+  confirmingDelete.value = false
+}
+
+async function confirmDelete() {
+  deleting.value = true
+  errorMsg.value = null
+  try {
+    await recordsApi.remove(props.date)
+    router.replace('/timeline')
+  } catch (e) {
+    errorMsg.value = axios.isAxiosError(e) ? (e.response?.data?.message ?? '删除失败') : '删除失败'
+    confirmingDelete.value = false
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -129,13 +158,32 @@ watch(() => props.date, (d) => load(d))
       >
         去写今天的
       </button>
-      <RouterLink
-        v-else
-        to="/timeline"
-        class="inline-block rounded-2xl bg-mint-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
-      >
-        回时间轴
-      </RouterLink>
+      <template v-else>
+        <button
+          v-if="canBackfill"
+          class="rounded-2xl bg-mint-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
+          @click="goBackfill"
+        >
+          补写这一天
+        </button>
+        <div v-else>
+          <button
+            disabled
+            class="cursor-not-allowed rounded-2xl bg-gray-100 px-5 py-2 text-sm font-medium text-gray-400"
+          >
+            补写这一天
+          </button>
+          <p class="mt-3 text-xs leading-relaxed text-gray-400">
+            记忆也会过期，像枝头放久的果子——写下此刻，趁它还新鲜。
+          </p>
+        </div>
+        <RouterLink
+          to="/timeline"
+          class="mt-4 inline-block rounded-2xl bg-white px-5 py-2 text-sm text-mint-600 shadow-sm transition hover:bg-mint-50"
+        >
+          回时间轴
+        </RouterLink>
+      </template>
     </div>
 
     <!-- 错误 -->
@@ -213,8 +261,8 @@ watch(() => props.date, (d) => load(d))
         </div>
       </section>
 
-      <!-- 底部操作：今天 = 重新写；过去某天 = 再来一条（回看心智不混 编辑心智）-->
-      <div class="mt-8 text-center">
+      <!-- 底部操作：今天 = 重新写；窗口内的过去某天 = 编辑 + 重逢往日；窗口外 = 只有重逢往日（彻底锁定）-->
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3 text-center">
         <button
           v-if="isToday"
           class="rounded-2xl bg-mint-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
@@ -223,7 +271,14 @@ watch(() => props.date, (d) => load(d))
           重新写
         </button>
         <button
-          v-else
+          v-if="!isToday && canBackfill"
+          class="rounded-2xl bg-mint-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-mint-600"
+          @click="goEditPast"
+        >
+          编辑
+        </button>
+        <button
+          v-if="!isToday"
           :disabled="randoming"
           class="rounded-2xl bg-white px-6 py-2.5 text-sm text-mint-600 shadow-sm transition hover:bg-mint-50 disabled:opacity-60"
           @click="pickRandom"
@@ -231,6 +286,36 @@ watch(() => props.date, (d) => load(d))
           {{ randoming ? '寻一段往日…' : '重逢往日' }}
         </button>
       </div>
+
+      <!-- 删除：二次确认，不可逆，不受补写窗口限制 -->
+      <div class="mt-4 text-center">
+        <button
+          v-if="!confirmingDelete"
+          class="text-xs text-gray-400 transition hover:text-red-500"
+          @click="askDelete"
+        >
+          删除这一天
+        </button>
+        <div v-else class="flex flex-col items-center gap-2">
+          <p class="text-xs text-gray-500">真的要删除这一天吗？删掉就找不回来了。</p>
+          <div class="flex items-center gap-3">
+            <button
+              class="rounded-2xl px-4 py-1.5 text-xs text-gray-500 transition hover:bg-mint-50"
+              @click="cancelDelete"
+            >
+              取消
+            </button>
+            <button
+              :disabled="deleting"
+              class="rounded-2xl bg-red-500 px-4 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-red-600 disabled:opacity-60"
+              @click="confirmDelete"
+            >
+              {{ deleting ? '删除中…' : '确定删除' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <p v-if="errorMsg" class="mt-3 text-center text-xs text-red-500">{{ errorMsg }}</p>
     </template>
   </main>
