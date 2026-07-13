@@ -4,7 +4,7 @@ export const BACKFILL_WINDOW_DAYS = 3
 
 export function daysAgo(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number)
-  const target = new Date(y, (m ?? 1) - 1, d ?? 1)
+  const target = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1)
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   return Math.round((today.getTime() - target.getTime()) / 86400000)

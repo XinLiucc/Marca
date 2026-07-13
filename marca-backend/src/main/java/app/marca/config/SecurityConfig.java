@@ -58,7 +58,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         // 开发期 Vite 默认 5173；如部署到其他域名，按需追加
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173", "http://127.0.0.1:5173",
+                "https://marca.xinliucc.cn"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
