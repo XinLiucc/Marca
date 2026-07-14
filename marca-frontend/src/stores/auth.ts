@@ -29,6 +29,11 @@ export const useAuthStore = defineStore('auth', () => {
     await login({ email: payload.email, password: payload.password })
   }
 
+  function setNickname(n: string) {
+    nickname.value = n
+    localStorage.setItem(NICKNAME_KEY, n)
+  }
+
   function logout() {
     token.value = null
     nickname.value = null
@@ -36,5 +41,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(NICKNAME_KEY)
   }
 
-  return { token, nickname, isAuthenticated, login, register, logout }
+  return { token, nickname, isAuthenticated, login, register, setNickname, logout }
 })

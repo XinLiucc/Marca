@@ -322,7 +322,7 @@ watch(questions, () => {
       <nav class="flex items-center gap-2 text-xs text-gray-500">
         <RouterLink to="/timeline" class="rounded-full px-3 py-1 hover:bg-mint-50">时间轴</RouterLink>
         <RouterLink to="/random" class="rounded-full px-3 py-1 hover:bg-mint-50">随机</RouterLink>
-        <button class="rounded-full px-3 py-1 hover:bg-mint-50" @click="auth.logout(); $router.push('/login')">退出</button>
+        <RouterLink to="/settings" class="rounded-full px-3 py-1 hover:bg-mint-50">设置</RouterLink>
       </nav>
     </header>
 
