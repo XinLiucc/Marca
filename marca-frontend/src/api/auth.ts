@@ -20,6 +20,7 @@ export interface UserResponse {
   id: number
   email: string
   nickname: string
+  createdAt: string
 }
 
 export const authApi = {
@@ -28,5 +29,11 @@ export const authApi = {
   },
   login(payload: LoginPayload) {
     return http.post<LoginResponse>('/api/auth/login', payload).then((r) => r.data)
+  },
+  me() {
+    return http.get<UserResponse>('/api/auth/me').then((r) => r.data)
+  },
+  updateProfile(nickname: string) {
+    return http.patch<UserResponse>('/api/auth/me', { nickname }).then((r) => r.data)
   },
 }

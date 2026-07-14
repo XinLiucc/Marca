@@ -54,6 +54,18 @@ public class AuthService {
                 "用户 ID 生成连续冲突，请稍后重试");
     }
 
+    public User me(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "用户不存在"));
+    }
+
+    @Transactional
+    public User updateNickname(Long userId, String nickname) {
+        User user = me(userId);
+        user.setNickname(nickname);
+        return user;
+    }
+
     public LoginResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "邮箱或密码错误"));
