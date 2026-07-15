@@ -54,10 +54,15 @@
 | 模块 | 文档 | 内容 |
 |------|------|------|
 | 用户认证 | [features/auth.md](./features/auth.md) | 注册 / 登录 / JWT / auth store |
-| 问题推荐 | [features/questions.md](./features/questions.md) | 题库 / 今日出题 / 数量选择 |
-| 记录主流程 | [features/records.md](./features/records.md) | record + record_answer / 提交 / 时间轴 / 随机回看 |
+| 用户中心 | [features/user-center.md](./features/user-center.md) | 查看账号信息 / 改昵称 / 退出 |
+| 问题推荐 | [features/questions.md](./features/questions.md) | 题库 / tags 场景匹配 / 今日出题 + 补写出题 |
+| 记录主流程 | [features/records.md](./features/records.md) | record + answer/image 子表 / 天气心情 / 沉浸式问答流 / 时间轴热图 / 详情页 / 补写编辑删除 |
 | 语音 | [features/voice.md](./features/voice.md) | 录音 / 上传 / 回放 |
-| AI 插画 | [features/ai-image.md](./features/ai-image.md) | **待确定**：生成时机 / API 候选 |
+| AI 插画 | [features/ai-image.md](./features/ai-image.md) | **待确定**：生成时机 / API 候选，仍是远期构想，不进入近期范围 |
+
+`images`（图片上传）、`weather-mood`（天气心情）、`immersive`（沉浸式问答流）、`contextual`（场景化出题）、
+`record-detail`（详情页）、`timeline-heatmap`（月历热图）这几个后来加的能力，因为都紧贴 record / question
+这两个聚合根、不构成独立的后端模块，文档上直接并入了 `records.md` / `questions.md` 对应章节，没有另开文件。
 
 每个模块文档统一结构：
 1. **概述**：要解决什么
@@ -112,17 +117,23 @@ questions ──┐
 
 同样按模块顺序，每个模块文档里有对应的页面/组件清单。
 
-### Phase 3：体验打磨
+### Phase 3：体验打磨（已完成，且比原计划走得更远）
 
 - UI 细节、动画、薄荷绿风格
 - 空状态、错误提示
 - 移动端响应式
+- 实际落地时长出了原计划没写的能力：天气心情、自由记录、图片上传、场景化出题、
+  沉浸式一次一题问答流、时间轴月历热图、记录详情页独立成页、补写/编辑/删除、
+  用户中心（见 [features/user-center.md](./features/user-center.md)）。这些都已并入
+  对应模块文档，不再单独走 Phase 划分。
 
-### Phase 4：App 打包
+### Phase 4：App 打包（未开始）
 
 - 集成 Capacitor
 - 麦克风插件替换 Web 录音
 - 真机测试
+
+已部署 Web 生产环境（`https://marca.xinliucc.cn`），Phase 4 是当前「后续可选方向」里排第一的候选，还没动工。
 
 ### Phase 5：AI 插画（待确定）
 

@@ -126,30 +126,32 @@ recorder.onstop = () => {
 
 - 推荐 `capacitor-voice-recorder` 或类似插件
 - 抽出统一的 `composables/useRecorder.ts`，内部根据平台分发
-- 接口对组件透明：`start()` / `stop(): Promise<Blob>` / `cancel()`
+- 接口对组件透明：`start()` / `stop(): Promise<void>` / `cancel()` / `reset()`
+
+**`cancel()` 的一个坑（已修复）**：取消录音时必须先把 `recorder.onstop` / `recorder.ondataavailable` 解绑，再调 `recorder.stop()`。原因是 `MediaRecorder.stop()` 触发的 `onstop` 是异步回调——如果不解绑，`cancel()` 里已经清空的 `blob` / `status` 会被这个「迟到」的 `onstop` 又写回「已录制」状态，造成竞态（用户明明点了取消，UI 却又弹出一段录音）。现在 `useRecorder.ts` 的 `cancel()` 里顺序是：解绑回调 → 停止 recorder → 清理计时器/流/blob → 状态归 `idle`。
 
 ### 5.3 接入 HomeView
 
-见 [records.md §4.2](./records.md#42-首页交互-homeviewvue)，VoiceRecorder 放在问题列表下方，独立组件，互不阻塞。
+见 [records.md](./records.md) 的「沉浸式问答流」小节——`VoiceRecorder` 放在 finishing 收尾阶段（跟 `ImageUploader`、自由记录并列），独立组件，互不阻塞。
 
 ---
 
 ## 6. 开发清单
 
 ### 后端
-- [ ] 配置 `/uploads` 静态资源映射 + 配置项 `marca.upload.dir`
-- [ ] `POST /api/records/voice` Controller（multipart 上传）
-- [ ] 文件大小 / MIME / 时长校验
-- [ ] 文件命名 + 落盘 Service
-- [ ] 单测：模拟上传 → 校验返回 url
+- [x] 配置 `/uploads` 静态资源映射 + 配置项（`StorageService` 本地磁盘实现，语音/图片共用）
+- [x] `POST /api/records/voice` Controller（multipart 上传）
+- [x] 文件大小 / MIME 校验（时长由前端计时传入，后端信任）
+- [x] 文件命名 + 落盘 Service
+- [ ] 单测：目前没有专门针对上传接口的单测
 
 ### 前端
-- [ ] `composables/useRecorder.ts`（Web 实现）
-- [ ] `VoiceRecorder.vue` 组件 + 状态机
-- [ ] 麦克风权限请求 + 错误兜底
-- [ ] 试听播放器
-- [ ] 接入 HomeView
-- [ ] RecordCard full 模式下的语音播放器
+- [x] `composables/useRecorder.ts`（Web 实现，含 `cancel()` 的 onstop 竞态修复）
+- [x] `VoiceRecorder.vue` 组件 + 状态机
+- [x] 麦克风权限请求 + 错误兜底
+- [x] 试听播放器
+- [x] 接入 HomeView（finishing 收尾阶段）
+- [x] RecordCard full 模式下的语音播放器
 
 ### Phase 4（Capacitor）
 - [ ] 接入 `capacitor-voice-recorder`（或同类插件）
