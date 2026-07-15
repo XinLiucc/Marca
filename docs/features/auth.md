@@ -153,3 +153,4 @@ logout()                   // 清 token → 跳登录页
 ## 6. 相关模块
 
 - 所有业务模块（[questions](./questions.md) / [records](./records.md) / [voice](./voice.md)）都依赖本模块的 JWT 鉴权
+- 查看账号信息 / 改昵称 / 退出登录见 [user-center](./user-center.md)（复用本模块的 `user` 表和鉴权，接口也挂在 `/api/auth/**` 下）
