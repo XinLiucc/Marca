@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import axios from 'axios'
 import { recordsApi } from '@/api/records'
 import { useRecorder } from '@/composables/useRecorder'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 
 const props = defineProps<{
   initialUrl?: string | null
@@ -118,7 +119,7 @@ function onClearExisting() {
     <!-- 已有语音（来自历史 / 刚上传）-->
     <div v-if="hasExisting" class="space-y-3">
       <div class="flex items-center justify-between rounded-2xl bg-mint-50/60 p-3">
-        <audio :src="existingUrl ?? undefined" controls class="h-9 w-full max-w-xs" />
+        <audio :src="resolveMediaUrl(existingUrl) ?? undefined" controls class="h-9 w-full max-w-xs" />
         <span class="ml-3 text-xs text-gray-500">{{ existingDuration ? fmt(existingDuration) : '' }}</span>
       </div>
       <div class="flex gap-2">

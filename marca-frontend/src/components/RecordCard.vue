@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { RecordDto } from '@/api/records'
 import { moodsOf, weatherOf } from '@/lib/weatherMood'
 import { writtenAtLabel as computeWrittenAtLabel } from '@/lib/writtenAt'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 
 const props = defineProps<{
   record: RecordDto
@@ -85,7 +86,7 @@ const writtenAtLabel = computed(() => computeWrittenAtLabel(props.record))
 
       <div v-if="record.voiceUrl" class="mt-3 rounded-2xl bg-mint-50/50 p-3">
         <p class="mb-2 text-xs text-mint-600">语音</p>
-        <audio :src="record.voiceUrl" controls class="w-full" />
+        <audio :src="resolveMediaUrl(record.voiceUrl) ?? undefined" controls class="w-full" />
       </div>
 
       <div v-if="record.images.length" class="mt-3 rounded-2xl bg-mint-50/50 p-3">
@@ -94,12 +95,12 @@ const writtenAtLabel = computed(() => computeWrittenAtLabel(props.record))
           <a
             v-for="img in record.images"
             :key="img.id ?? img.url"
-            :href="img.url"
+            :href="resolveMediaUrl(img.url) ?? undefined"
             target="_blank"
             rel="noopener"
             class="block aspect-square overflow-hidden rounded-2xl bg-white"
           >
-            <img :src="img.url" class="h-full w-full object-cover" />
+            <img :src="resolveMediaUrl(img.url) ?? undefined" class="h-full w-full object-cover" />
           </a>
         </div>
       </div>

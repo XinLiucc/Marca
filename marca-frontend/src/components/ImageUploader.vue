@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import axios from 'axios'
 import { recordsApi, type ImageDto } from '@/api/records'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 
 const props = defineProps<{
   modelValue: ImageDto[]
@@ -81,7 +82,7 @@ function removeAt(i: number) {
         :key="img.url"
         class="group relative aspect-square overflow-hidden rounded-2xl bg-mint-50"
       >
-        <img :src="img.url" :alt="`图片 ${i + 1}`" class="h-full w-full object-cover" />
+        <img :src="resolveMediaUrl(img.url) ?? undefined" :alt="`图片 ${i + 1}`" class="h-full w-full object-cover" />
         <button
           type="button"
           class="absolute right-1 top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-red-500 shadow group-hover:flex"

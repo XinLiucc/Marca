@@ -6,6 +6,7 @@ import { recordsApi, type RecordDto } from '@/api/records'
 import { moodsOf, weatherOf } from '@/lib/weatherMood'
 import { writtenAtLabel as computeWrittenAtLabel } from '@/lib/writtenAt'
 import { canBackfill as computeCanBackfill } from '@/lib/backfillWindow'
+import { resolveMediaUrl } from '@/lib/mediaUrl'
 
 const props = defineProps<{
   date: string
@@ -239,7 +240,7 @@ watch(() => props.date, (d) => load(d))
         <header class="mb-3 flex items-center gap-2 text-xs text-mint-600">
           <span class="rounded-full bg-mint-100 px-2 py-0.5">语音</span>
         </header>
-        <audio :src="record.voiceUrl" controls class="w-full" />
+        <audio :src="resolveMediaUrl(record.voiceUrl) ?? undefined" controls class="w-full" />
       </section>
 
       <!-- 图片 -->
@@ -251,12 +252,12 @@ watch(() => props.date, (d) => load(d))
           <a
             v-for="img in record.images"
             :key="img.id ?? img.url"
-            :href="img.url"
+            :href="resolveMediaUrl(img.url) ?? undefined"
             target="_blank"
             rel="noopener"
             class="block aspect-square overflow-hidden rounded-2xl bg-mint-50"
           >
-            <img :src="img.url" class="h-full w-full object-cover" />
+            <img :src="resolveMediaUrl(img.url) ?? undefined" class="h-full w-full object-cover" />
           </a>
         </div>
       </section>

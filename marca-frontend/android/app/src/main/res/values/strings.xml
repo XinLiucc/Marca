@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Marca</string>
+    <string name="title_activity_main">Marca</string>
+    <string name="package_name">cn.xinliucc.marca</string>
+    <string name="custom_url_scheme">cn.xinliucc.marca</string>
+</resources>
