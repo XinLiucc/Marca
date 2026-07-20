@@ -85,7 +85,7 @@ function removeAt(i: number) {
         <img :src="resolveMediaUrl(img.url) ?? undefined" :alt="`图片 ${i + 1}`" class="h-full w-full object-cover" />
         <button
           type="button"
-          class="absolute right-1 top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-red-500 shadow group-hover:flex"
+          class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-red-500 shadow"
           @click="removeAt(i)"
           title="删除"
         >
