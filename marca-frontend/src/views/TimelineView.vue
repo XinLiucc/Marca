@@ -52,6 +52,7 @@ onMounted(load)
       <nav class="flex gap-2 text-xs text-gray-500">
         <RouterLink to="/" class="rounded-full px-3 py-1 hover:bg-mint-50">今日</RouterLink>
         <RouterLink to="/random" class="rounded-full px-3 py-1 hover:bg-mint-50">随机</RouterLink>
+        <RouterLink to="/settings" class="rounded-full px-3 py-1 hover:bg-mint-50">设置</RouterLink>
       </nav>
     </header>
 
