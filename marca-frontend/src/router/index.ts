@@ -16,6 +16,11 @@ const router = createRouter({
       component: () => import('@/views/HomeView.vue'),
     },
     {
+      path: '/write',
+      name: 'write',
+      component: () => import('@/views/WriteView.vue'),
+    },
+    {
       path: '/timeline',
       name: 'timeline',
       component: () => import('@/views/TimelineView.vue'),

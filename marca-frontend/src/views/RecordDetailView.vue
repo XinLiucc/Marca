@@ -40,21 +40,21 @@ function localTodayString(): string {
 }
 
 function goEdit() {
-  router.push({ path: '/', query: { edit: '1' } })
+  router.push('/write')
 }
 
 function goEditPast() {
-  router.push({ path: '/', query: { editDate: props.date } })
+  router.push({ path: '/write', query: { editDate: props.date } })
 }
 
 function goWriteToday() {
-  router.push('/')
+  router.push('/write')
 }
 
 const canBackfill = computed(() => computeCanBackfill(props.date))
 
 function goBackfill() {
-  router.push({ path: '/', query: { backfill: props.date } })
+  router.push({ path: '/write', query: { backfill: props.date } })
 }
 
 const writtenAtLabel = computed(() => (record.value ? computeWrittenAtLabel(record.value) : null))
