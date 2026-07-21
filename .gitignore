@@ -9,3 +9,6 @@
 
 # 本地运行笔记（与 docs/features 设计文档区分开，不入库）
 docs/STATUS.md
+
+# 本地专属工作流 skill（含服务器路径等环境细节，不入库）
+.claude/
