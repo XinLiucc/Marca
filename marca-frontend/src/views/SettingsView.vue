@@ -78,7 +78,13 @@ onMounted(load)
 
 <template>
   <main class="mx-auto max-w-xl px-4 py-8 pb-24">
-    <header class="mb-6 flex items-baseline justify-between">
+    <header class="mb-6 flex items-center justify-between">
+      <button
+        class="rounded-full px-3 py-1 text-xs text-gray-500 transition hover:bg-mint-50 hover:text-mint-600"
+        @click="router.back()"
+      >
+        ← 返回
+      </button>
       <h1 class="text-xl font-bold text-mint-600">设置</h1>
       <nav class="flex gap-2 text-xs text-gray-500">
         <RouterLink to="/" class="rounded-full px-3 py-1 hover:bg-mint-50">今日</RouterLink>
