@@ -44,21 +44,11 @@ const moodTags = computed(() => moodsOf(todayRecord.value?.moods))
 const hasVoice = computed(() => !!todayRecord.value?.voiceUrl)
 const imageCount = computed(() => todayRecord.value?.images.length ?? 0)
 
-// 已答问题的分类标签（去重），只做"今天写了哪些方面"的一眼概览，不列全文
 const categoryLabel: Record<string, string> = {
   event: '事件',
   emotion: '情绪',
   future: '未来',
 }
-const answeredCategories = computed(() => {
-  const rec = todayRecord.value
-  if (!rec) return []
-  const seen = new Set<string>()
-  for (const a of rec.answers) {
-    if (a.answer?.trim() && a.category) seen.add(a.category)
-  }
-  return [...seen].map((key) => categoryLabel[key] ?? key)
-})
 
 // 摘要引言：优先自由记录，没有则取第一条有内容的问答，只挑一段做"翻开这一页"式的呈现
 const firstAnsweredId = computed(() => {
@@ -153,7 +143,7 @@ async function pickRandom() {
       <!-- 今天已写：摘要落地态 -->
       <article v-if="hasToday" class="rounded-3xl bg-white p-6 shadow-sm">
         <div
-          v-if="weatherTag || moodTags.length || hasVoice || imageCount > 0 || answeredCategories.length"
+          v-if="weatherTag || moodTags.length || hasVoice || imageCount > 0"
           class="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-600"
         >
           <span v-if="weatherTag" class="rounded-full bg-mint-50 px-3 py-1">
@@ -161,9 +151,6 @@ async function pickRandom() {
           </span>
           <span v-for="m in moodTags" :key="m.key" class="rounded-full bg-mint-50 px-3 py-1">
             {{ m.emoji }} {{ m.label }}
-          </span>
-          <span v-for="c in answeredCategories" :key="c" class="rounded-full bg-mint-100 px-3 py-1 text-mint-600">
-            {{ c }}
           </span>
           <span v-if="hasVoice" class="rounded-full bg-mint-50 px-3 py-1">🎤 语音</span>
           <span v-if="imageCount > 0" class="rounded-full bg-mint-50 px-3 py-1">📷 {{ imageCount }} 张</span>
@@ -242,7 +229,7 @@ async function pickRandom() {
           class="rounded-2xl bg-white px-6 py-2.5 text-sm text-mint-600 shadow-sm transition hover:bg-mint-50 disabled:opacity-60"
           @click="pickRandom"
         >
-          {{ randoming ? '寻一段往日…' : '随机重逢往日' }}
+          {{ randoming ? '寻一段往日…' : '重逢往日' }}
         </button>
       </div>
 
