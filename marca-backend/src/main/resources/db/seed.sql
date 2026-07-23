@@ -1,6 +1,6 @@
 -- 问题题库种子数据
 -- 执行：mysql -u marca -p marca < seed.sql
--- 共 73 道：60 道通用基础题 + 13 道场景题。其中 21 道带 tags（8 老题打标 + 13 新题）。
+-- 共 79 道：60 道通用基础题 + 19 道场景题。其中 27 道带 tags（8 老题打标 + 19 新题）。
 -- tags 维度：time (morning/afternoon/evening/late_night) · day (monday/friday/weekend...) · season (spring/summer/autumn/winter)
 
 SET NAMES utf8mb4;
@@ -121,4 +121,12 @@ INSERT INTO question (category, content, tags) VALUES
 -- 但 dev DB 里 id=65「冬天的夜里」是验算法时插的样本，可保留可删，这里不放回 seed
 ('event',   '春天里有没有什么"开始"，哪怕只是小事？', JSON_OBJECT('season', JSON_ARRAY('spring'))),
 ('future',  '这个夏天的傍晚，你最想去哪里走走？', JSON_OBJECT('season', JSON_ARRAY('summer'), 'time', JSON_ARRAY('evening'))),
-('event',   '秋天有没有让你停下来的画面？', JSON_OBJECT('season', JSON_ARRAY('autumn')));
+('event',   '秋天有没有让你停下来的画面？', JSON_OBJECT('season', JSON_ARRAY('autumn'))),
+-- afternoon 补充 x3（原来只有 1 道）
+('event',   '这个下午，有没有一段时间感觉过得特别快？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+('emotion', '这一下午犯困或走神的时候，脑子里飘过什么？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+('future',  '这个下午有没有一件事，一直想着"待会儿再做"？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+-- winter 补充 x3（原来是 0）
+('event',   '冬天里，有没有什么让你想窝起来的时刻？', JSON_OBJECT('season', JSON_ARRAY('winter'))),
+('emotion', '冷的时候，是什么让你觉得暖？', JSON_OBJECT('season', JSON_ARRAY('winter'))),
+('future',  '如果给这个冬天留一句话，会是什么？', JSON_OBJECT('season', JSON_ARRAY('winter')));
