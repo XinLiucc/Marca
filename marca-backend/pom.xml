@@ -58,6 +58,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- 农历转换（春节/端午/中秋等阴历节日判断），只用 core 模块 -->
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-core</artifactId>
+			<version>5.8.34</version>
+		</dependency>
+
 		<!-- JWT (jjwt 0.12.x) -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
