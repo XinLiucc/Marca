@@ -1,6 +1,9 @@
 -- 问题题库种子数据
 -- 执行：mysql -u marca -p marca < seed.sql
--- 共 79 道：60 道通用基础题 + 19 道场景题。其中 27 道带 tags（8 老题打标 + 19 新题）。
+-- 共 122 道：72 道通用基础题 + 35 道场景题 + 15 道节日题。其中 58 道带 tags（8 老题打标 + 50 新题）。
+-- 2026-07-24：场景题第二轮补充，morning/afternoon/monday/friday/weekend/spring/summer/autumn 各 +2（16 道）。
+-- 2026-07-24：通用题补充，PERMA(5)/叙事疗法(4)/SDT(3) 理论驱动，共 12 道，不带 tags（进通用池）。
+-- 2026-07-24：节日题补充，holiday 维度从 0 到 15 个节日各 1 道。
 -- tags 维度：time (morning/afternoon/evening/late_night) · day (monday/friday/weekend...) · season (spring/summer/autumn/winter)
 
 SET NAMES utf8mb4;
@@ -130,3 +133,68 @@ INSERT INTO question (category, content, tags) VALUES
 ('event',   '冬天里，有没有什么让你想窝起来的时刻？', JSON_OBJECT('season', JSON_ARRAY('winter'))),
 ('emotion', '冷的时候，是什么让你觉得暖？', JSON_OBJECT('season', JSON_ARRAY('winter'))),
 ('future',  '如果给这个冬天留一句话，会是什么？', JSON_OBJECT('season', JSON_ARRAY('winter')));
+
+-- ========== 场景题第二轮补充（8 维度各 +2，2026-07-24） ==========
+INSERT INTO question (category, content, tags) VALUES
+-- morning +2
+('event',   '早饭吃了什么，还是没顾上吃？', JSON_OBJECT('time', JSON_ARRAY('morning'))),
+('emotion', '醒来那一刻，身体是轻的还是沉的？', JSON_OBJECT('time', JSON_ARRAY('morning'))),
+-- afternoon +2
+('event',   '这个下午，阳光照进来的角度像什么？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+('emotion', '一杯水、一杯咖啡，这个下午靠什么撑过去的？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+-- monday +2
+('emotion', '周一的心情，跟上周日晚上想的一样吗？', JSON_OBJECT('day', JSON_ARRAY('monday'))),
+('event',   '这周的开头，发生了什么让你有点意外？', JSON_OBJECT('day', JSON_ARRAY('monday'))),
+-- friday +2
+('future',  '周末就要来了，最想先放下什么？', JSON_OBJECT('day', JSON_ARRAY('friday'))),
+('event',   '这一周，哪一天的自己现在想起来最陌生？', JSON_OBJECT('day', JSON_ARRAY('friday'))),
+-- weekend +2
+('emotion', '周末的这一天，有没有真的松弛下来？', JSON_OBJECT('day', JSON_ARRAY('weekend'))),
+('future',  '下周一开始前，还有什么想在今天做完？', JSON_OBJECT('day', JSON_ARRAY('weekend'))),
+-- spring +2
+('emotion', '春天的风吹过来，有没有让你想起点什么？', JSON_OBJECT('season', JSON_ARRAY('spring'))),
+('future',  '这个春天，有没有一颗种子（不管是不是真的植物）被你悄悄种下？', JSON_OBJECT('season', JSON_ARRAY('spring'))),
+-- summer +2
+('event',   '夏天的这一天，热得让你记住了什么？', JSON_OBJECT('season', JSON_ARRAY('summer'))),
+('emotion', '这个夏天，有没有一瞬间的凉，让你觉得很值？', JSON_OBJECT('season', JSON_ARRAY('summer'))),
+-- autumn +2
+('emotion', '秋天渐凉的时候，心里有没有也跟着收一收？', JSON_OBJECT('season', JSON_ARRAY('autumn'))),
+('future',  '这个秋天，有什么想在冬天来之前完成？', JSON_OBJECT('season', JSON_ARRAY('autumn')));
+
+-- ========== 通用题：PERMA / 叙事疗法 / SDT（12 道，2026-07-24） ==========
+INSERT INTO question (category, content) VALUES
+-- PERMA x5（积极心理学五要素）
+('emotion', '今天有没有一个瞬间，纯粹地开心，不为什么原因？'),
+('event',   '今天有没有一段时间，整个人投入进去，忘了看时间？'),
+('event',   '今天有没有和谁的一次对话，让你觉得离得更近了？'),
+('future',  '今天做的事情里，有没有哪件让你觉得"这就是我想活成的样子"？'),
+('event',   '今天有没有一件小事，让你想为自己鼓个掌？'),
+-- 叙事疗法 x4（外化问题 / 改写与作者身份 / 例外时刻）
+('emotion', '如果把今天让你烦心的事当成故事里的一个角色，你会给它起什么名字？'),
+('future',  '如果今天是你正在写的一本书的一页，你希望这一页留下什么？'),
+('emotion', '今天有没有哪一刻，你不再用"一直都这样"去形容自己？'),
+('future',  '如果这段经历是别人讲给你听的故事，你会想给主角一个什么样的结局？'),
+-- SDT x3（自主 / 胜任 / 归属）
+('event',   '今天做的事情里，哪件是你自己选的，不是被推着做的？'),
+('event',   '今天有没有一件事，让你觉得"我能行"？'),
+('emotion', '今天有没有一刻，让你觉得自己真的被谁看见了？');
+
+-- ========== 节日题（15 道，holiday 维度从 0 到覆盖全部支持的节日，2026-07-24） ==========
+INSERT INTO question (category, content, tags) VALUES
+-- 阳历固定节日 x10
+('future',  '新一年的第一天，你想悄悄许一个什么愿？', JSON_OBJECT('holiday', JSON_ARRAY('new_year'))),
+('emotion', '今天有没有一份爱，被你说出口或者没说出口？', JSON_OBJECT('holiday', JSON_ARRAY('valentines_day'))),
+('emotion', '今天有没有为自己做一件事，纯粹因为"我值得"？', JSON_OBJECT('holiday', JSON_ARRAY('womens_day'))),
+('event',   '假期的第一天，你选择用来做什么？', JSON_OBJECT('holiday', JSON_ARRAY('labor_day'))),
+('emotion', '如果今天见到小时候的自己，你想跟ta说什么？', JSON_OBJECT('holiday', JSON_ARRAY('childrens_day'))),
+('emotion', '有没有一位老师，今天突然想起来？', JSON_OBJECT('holiday', JSON_ARRAY('teachers_day'))),
+('event',   '长假的这一天，是在赶路还是在休息？', JSON_OBJECT('holiday', JSON_ARRAY('national_day'))),
+('event',   '今天买了什么，是想要的还是顺手加的？', JSON_OBJECT('holiday', JSON_ARRAY('singles_day'))),
+('emotion', '今晚有没有什么，让你觉得"这一年值了"？', JSON_OBJECT('holiday', JSON_ARRAY('christmas_eve'))),
+('future',  '如果今天能收到一份礼物，你希望是什么（不一定是物品）？', JSON_OBJECT('holiday', JSON_ARRAY('christmas'))),
+-- 农历节日 x5
+('event',   '年夜饭桌上，有没有一句话让你记到现在？', JSON_OBJECT('holiday', JSON_ARRAY('new_year_eve'))),
+('event',   '大年初一，见到的第一个人是谁？', JSON_OBJECT('holiday', JSON_ARRAY('spring_festival'))),
+('emotion', '这个团圆的日子，有没有谁不在身边？', JSON_OBJECT('holiday', JSON_ARRAY('lantern_festival'))),
+('event',   '今天有没有吃到一口让你想起某个人的味道？', JSON_OBJECT('holiday', JSON_ARRAY('dragon_boat_festival'))),
+('emotion', '今晚的月亮，你是跟谁一起看的？', JSON_OBJECT('holiday', JSON_ARRAY('mid_autumn_festival')));
