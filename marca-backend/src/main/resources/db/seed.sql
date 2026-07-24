@@ -1,7 +1,8 @@
 -- 问题题库种子数据
 -- 执行：mysql -u marca -p marca < seed.sql
--- 共 95 道：60 道通用基础题 + 35 道场景题。其中 43 道带 tags（8 老题打标 + 35 新题）。
+-- 共 107 道：72 道通用基础题 + 35 道场景题。其中 43 道带 tags（8 老题打标 + 35 新题）。
 -- 2026-07-24：场景题第二轮补充，morning/afternoon/monday/friday/weekend/spring/summer/autumn 各 +2（16 道）。
+-- 2026-07-24：通用题补充，PERMA(5)/叙事疗法(4)/SDT(3) 理论驱动，共 12 道，不带 tags（进通用池）。
 -- tags 维度：time (morning/afternoon/evening/late_night) · day (monday/friday/weekend...) · season (spring/summer/autumn/winter)
 
 SET NAMES utf8mb4;
@@ -158,3 +159,21 @@ INSERT INTO question (category, content, tags) VALUES
 -- autumn +2
 ('emotion', '秋天渐凉的时候，心里有没有也跟着收一收？', JSON_OBJECT('season', JSON_ARRAY('autumn'))),
 ('future',  '这个秋天，有什么想在冬天来之前完成？', JSON_OBJECT('season', JSON_ARRAY('autumn')));
+
+-- ========== 通用题：PERMA / 叙事疗法 / SDT（12 道，2026-07-24） ==========
+INSERT INTO question (category, content) VALUES
+-- PERMA x5（积极心理学五要素）
+('emotion', '今天有没有一个瞬间，纯粹地开心，不为什么原因？'),
+('event',   '今天有没有一段时间，整个人投入进去，忘了看时间？'),
+('event',   '今天有没有和谁的一次对话，让你觉得离得更近了？'),
+('future',  '今天做的事情里，有没有哪件让你觉得"这就是我想活成的样子"？'),
+('event',   '今天有没有一件小事，让你想为自己鼓个掌？'),
+-- 叙事疗法 x4（外化问题 / 改写与作者身份 / 例外时刻）
+('emotion', '如果把今天让你烦心的事当成故事里的一个角色，你会给它起什么名字？'),
+('future',  '如果今天是你正在写的一本书的一页，你希望这一页留下什么？'),
+('emotion', '今天有没有哪一刻，你不再用"一直都这样"去形容自己？'),
+('future',  '如果这段经历是别人讲给你听的故事，你会想给主角一个什么样的结局？'),
+-- SDT x3（自主 / 胜任 / 归属）
+('event',   '今天做的事情里，哪件是你自己选的，不是被推着做的？'),
+('event',   '今天有没有一件事，让你觉得"我能行"？'),
+('emotion', '今天有没有一刻，让你觉得自己真的被谁看见了？');
