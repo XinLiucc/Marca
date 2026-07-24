@@ -1,8 +1,9 @@
 -- 问题题库种子数据
 -- 执行：mysql -u marca -p marca < seed.sql
--- 共 107 道：72 道通用基础题 + 35 道场景题。其中 43 道带 tags（8 老题打标 + 35 新题）。
+-- 共 122 道：72 道通用基础题 + 35 道场景题 + 15 道节日题。其中 58 道带 tags（8 老题打标 + 50 新题）。
 -- 2026-07-24：场景题第二轮补充，morning/afternoon/monday/friday/weekend/spring/summer/autumn 各 +2（16 道）。
 -- 2026-07-24：通用题补充，PERMA(5)/叙事疗法(4)/SDT(3) 理论驱动，共 12 道，不带 tags（进通用池）。
+-- 2026-07-24：节日题补充，holiday 维度从 0 到 15 个节日各 1 道。
 -- tags 维度：time (morning/afternoon/evening/late_night) · day (monday/friday/weekend...) · season (spring/summer/autumn/winter)
 
 SET NAMES utf8mb4;
@@ -177,3 +178,23 @@ INSERT INTO question (category, content) VALUES
 ('event',   '今天做的事情里，哪件是你自己选的，不是被推着做的？'),
 ('event',   '今天有没有一件事，让你觉得"我能行"？'),
 ('emotion', '今天有没有一刻，让你觉得自己真的被谁看见了？');
+
+-- ========== 节日题（15 道，holiday 维度从 0 到覆盖全部支持的节日，2026-07-24） ==========
+INSERT INTO question (category, content, tags) VALUES
+-- 阳历固定节日 x10
+('future',  '新一年的第一天，你想悄悄许一个什么愿？', JSON_OBJECT('holiday', JSON_ARRAY('new_year'))),
+('emotion', '今天有没有一份爱，被你说出口或者没说出口？', JSON_OBJECT('holiday', JSON_ARRAY('valentines_day'))),
+('emotion', '今天有没有为自己做一件事，纯粹因为"我值得"？', JSON_OBJECT('holiday', JSON_ARRAY('womens_day'))),
+('event',   '假期的第一天，你选择用来做什么？', JSON_OBJECT('holiday', JSON_ARRAY('labor_day'))),
+('emotion', '如果今天见到小时候的自己，你想跟ta说什么？', JSON_OBJECT('holiday', JSON_ARRAY('childrens_day'))),
+('emotion', '有没有一位老师，今天突然想起来？', JSON_OBJECT('holiday', JSON_ARRAY('teachers_day'))),
+('event',   '长假的这一天，是在赶路还是在休息？', JSON_OBJECT('holiday', JSON_ARRAY('national_day'))),
+('event',   '今天买了什么，是想要的还是顺手加的？', JSON_OBJECT('holiday', JSON_ARRAY('singles_day'))),
+('emotion', '今晚有没有什么，让你觉得"这一年值了"？', JSON_OBJECT('holiday', JSON_ARRAY('christmas_eve'))),
+('future',  '如果今天能收到一份礼物，你希望是什么（不一定是物品）？', JSON_OBJECT('holiday', JSON_ARRAY('christmas'))),
+-- 农历节日 x5
+('event',   '年夜饭桌上，有没有一句话让你记到现在？', JSON_OBJECT('holiday', JSON_ARRAY('new_year_eve'))),
+('event',   '大年初一，见到的第一个人是谁？', JSON_OBJECT('holiday', JSON_ARRAY('spring_festival'))),
+('emotion', '这个团圆的日子，有没有谁不在身边？', JSON_OBJECT('holiday', JSON_ARRAY('lantern_festival'))),
+('event',   '今天有没有吃到一口让你想起某个人的味道？', JSON_OBJECT('holiday', JSON_ARRAY('dragon_boat_festival'))),
+('emotion', '今晚的月亮，你是跟谁一起看的？', JSON_OBJECT('holiday', JSON_ARRAY('mid_autumn_festival')));
