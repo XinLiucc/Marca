@@ -1,6 +1,7 @@
 -- 问题题库种子数据
 -- 执行：mysql -u marca -p marca < seed.sql
--- 共 79 道：60 道通用基础题 + 19 道场景题。其中 27 道带 tags（8 老题打标 + 19 新题）。
+-- 共 95 道：60 道通用基础题 + 35 道场景题。其中 43 道带 tags（8 老题打标 + 35 新题）。
+-- 2026-07-24：场景题第二轮补充，morning/afternoon/monday/friday/weekend/spring/summer/autumn 各 +2（16 道）。
 -- tags 维度：time (morning/afternoon/evening/late_night) · day (monday/friday/weekend...) · season (spring/summer/autumn/winter)
 
 SET NAMES utf8mb4;
@@ -130,3 +131,30 @@ INSERT INTO question (category, content, tags) VALUES
 ('event',   '冬天里，有没有什么让你想窝起来的时刻？', JSON_OBJECT('season', JSON_ARRAY('winter'))),
 ('emotion', '冷的时候，是什么让你觉得暖？', JSON_OBJECT('season', JSON_ARRAY('winter'))),
 ('future',  '如果给这个冬天留一句话，会是什么？', JSON_OBJECT('season', JSON_ARRAY('winter')));
+
+-- ========== 场景题第二轮补充（8 维度各 +2，2026-07-24） ==========
+INSERT INTO question (category, content, tags) VALUES
+-- morning +2
+('event',   '早饭吃了什么，还是没顾上吃？', JSON_OBJECT('time', JSON_ARRAY('morning'))),
+('emotion', '醒来那一刻，身体是轻的还是沉的？', JSON_OBJECT('time', JSON_ARRAY('morning'))),
+-- afternoon +2
+('event',   '这个下午，阳光照进来的角度像什么？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+('emotion', '一杯水、一杯咖啡，这个下午靠什么撑过去的？', JSON_OBJECT('time', JSON_ARRAY('afternoon'))),
+-- monday +2
+('emotion', '周一的心情，跟上周日晚上想的一样吗？', JSON_OBJECT('day', JSON_ARRAY('monday'))),
+('event',   '这周的开头，发生了什么让你有点意外？', JSON_OBJECT('day', JSON_ARRAY('monday'))),
+-- friday +2
+('future',  '周末就要来了，最想先放下什么？', JSON_OBJECT('day', JSON_ARRAY('friday'))),
+('event',   '这一周，哪一天的自己现在想起来最陌生？', JSON_OBJECT('day', JSON_ARRAY('friday'))),
+-- weekend +2
+('emotion', '周末的这一天，有没有真的松弛下来？', JSON_OBJECT('day', JSON_ARRAY('weekend'))),
+('future',  '下周一开始前，还有什么想在今天做完？', JSON_OBJECT('day', JSON_ARRAY('weekend'))),
+-- spring +2
+('emotion', '春天的风吹过来，有没有让你想起点什么？', JSON_OBJECT('season', JSON_ARRAY('spring'))),
+('future',  '这个春天，有没有一颗种子（不管是不是真的植物）被你悄悄种下？', JSON_OBJECT('season', JSON_ARRAY('spring'))),
+-- summer +2
+('event',   '夏天的这一天，热得让你记住了什么？', JSON_OBJECT('season', JSON_ARRAY('summer'))),
+('emotion', '这个夏天，有没有一瞬间的凉，让你觉得很值？', JSON_OBJECT('season', JSON_ARRAY('summer'))),
+-- autumn +2
+('emotion', '秋天渐凉的时候，心里有没有也跟着收一收？', JSON_OBJECT('season', JSON_ARRAY('autumn'))),
+('future',  '这个秋天，有什么想在冬天来之前完成？', JSON_OBJECT('season', JSON_ARRAY('autumn')));
