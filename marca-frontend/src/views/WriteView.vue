@@ -96,6 +96,9 @@ const answeredList = computed(() =>
 
 const todayRecord = ref<RecordDto | null>(null)
 
+// 切题动画方向：1 = 下一个（新卡片从右侧滑入），-1 = 上一个（从左侧滑入）
+const direction = ref(1)
+
 const currentQuestion = computed(() => questions.value[currentIndex.value])
 const isFirst = computed(() => currentIndex.value === 0)
 const isLast = computed(() => currentIndex.value === questions.value.length - 1)
@@ -207,12 +210,16 @@ function next() {
   if (isLast.value) {
     goFinish()
   } else {
+    direction.value = 1
     currentIndex.value++
   }
 }
 
 function prev() {
-  if (!isFirst.value) currentIndex.value--
+  if (!isFirst.value) {
+    direction.value = -1
+    currentIndex.value--
+  }
 }
 
 function skip() {
@@ -329,8 +336,10 @@ watch(questions, () => {
       {{ errorMsg }}
     </div>
 
+    <!-- answering ↔ finishing：阶段切换动画 -->
+    <Transition name="stage" mode="out-in">
     <!-- answering：一次一个 -->
-    <template v-else-if="mode === 'answering'">
+    <div v-if="mode === 'answering'" key="answering">
       <!-- 顶部：天气 / 心情 -->
       <div class="mb-4">
         <WeatherMoodPicker
@@ -381,23 +390,29 @@ watch(questions, () => {
         </div>
       </div>
 
-      <article v-if="currentQuestion" class="rounded-3xl bg-white p-6 shadow-sm">
-        <header class="mb-5">
-          <span class="rounded-full bg-mint-100 px-3 py-1 text-xs text-mint-600">
-            {{ categoryLabel[currentQuestion.category] }}
-          </span>
-        </header>
-        <p class="mb-6 text-xl font-medium leading-relaxed text-gray-800">
-          {{ currentQuestion.content }}
-        </p>
-        <textarea
-          :value="getAnswer(currentQuestion.id)"
-          rows="5"
-          placeholder="想到什么就写什么，留空就跳过"
-          class="min-h-[140px] w-full resize-none rounded-2xl border border-mint-200 bg-mint-50 p-4 text-base leading-relaxed text-gray-800 placeholder:text-mint-400 outline-none transition focus:border-mint-500 focus:bg-white focus:ring-2 focus:ring-mint-100"
-          @input="(e) => setAnswer(currentQuestion!.id, (e.target as HTMLTextAreaElement).value)"
-        />
-      </article>
+      <Transition :name="direction > 0 ? 'slide-next' : 'slide-prev'" mode="out-in">
+        <article
+          v-if="currentQuestion"
+          :key="currentIndex"
+          class="rounded-3xl bg-white p-6 shadow-sm"
+        >
+          <header class="mb-5">
+            <span class="rounded-full bg-mint-100 px-3 py-1 text-xs text-mint-600">
+              {{ categoryLabel[currentQuestion.category] }}
+            </span>
+          </header>
+          <p class="mb-6 text-xl font-medium leading-relaxed text-gray-800">
+            {{ currentQuestion.content }}
+          </p>
+          <textarea
+            :value="getAnswer(currentQuestion.id)"
+            rows="5"
+            placeholder="想到什么就写什么，留空就跳过"
+            class="min-h-[140px] w-full resize-none rounded-2xl border border-mint-200 bg-mint-50 p-4 text-base leading-relaxed text-gray-800 placeholder:text-mint-400 outline-none transition focus:border-mint-500 focus:bg-white focus:ring-2 focus:ring-mint-100"
+            @input="(e) => setAnswer(currentQuestion!.id, (e.target as HTMLTextAreaElement).value)"
+          />
+        </article>
+      </Transition>
 
       <!-- 底部操作 -->
       <nav class="mt-6 flex items-center justify-between">
@@ -430,10 +445,10 @@ watch(questions, () => {
           </button>
         </div>
       </nav>
-    </template>
+    </div>
 
     <!-- finishing: 自由记录 + 语音 + 图片 + 保存 -->
-    <template v-else-if="mode === 'finishing'">
+    <div v-else-if="mode === 'finishing'" key="finishing">
       <button
         class="mb-6 text-xs text-gray-400 transition hover:text-mint-600"
         @click="backToAnswering"
@@ -524,6 +539,64 @@ watch(questions, () => {
                 : '保存今日记录'
         }}
       </button>
-    </template>
+    </div>
+    </Transition>
   </main>
 </template>
+
+<style scoped>
+.slide-next-enter-active,
+.slide-next-leave-active,
+.slide-prev-enter-active,
+.slide-prev-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.slide-next-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+.slide-next-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.slide-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.slide-prev-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.stage-enter-active,
+.stage-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.stage-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.stage-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-next-enter-active,
+  .slide-next-leave-active,
+  .slide-prev-enter-active,
+  .slide-prev-leave-active,
+  .stage-enter-active,
+  .stage-leave-active {
+    transition: opacity 0.2s ease;
+  }
+  .slide-next-enter-from,
+  .slide-next-leave-to,
+  .slide-prev-enter-from,
+  .slide-prev-leave-to,
+  .stage-enter-from,
+  .stage-leave-to {
+    transform: none;
+  }
+}
+</style>
