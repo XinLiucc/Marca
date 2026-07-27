@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import axios from 'axios'
+import draggable from 'vuedraggable'
 import { recordsApi, type ImageDto } from '@/api/records'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
 
@@ -76,32 +77,46 @@ function removeAt(i: number) {
       <span class="text-gray-400">截图、照片、表情包都行</span>
     </header>
 
-    <div class="grid grid-cols-3 gap-2">
-      <div
-        v-for="(img, i) in items"
-        :key="img.url"
-        class="group relative aspect-square overflow-hidden rounded-2xl bg-mint-50"
-      >
-        <img :src="resolveMediaUrl(img.url) ?? undefined" :alt="`图片 ${i + 1}`" class="h-full w-full object-cover" />
+    <draggable
+      v-model="items"
+      item-key="url"
+      tag="div"
+      class="grid grid-cols-3 gap-2"
+      handle=".drag-handle"
+      :animation="150"
+      @end="emitChange"
+    >
+      <template #item="{ element: img, index: i }">
+        <div class="group relative aspect-square overflow-hidden rounded-2xl bg-mint-50">
+          <img :src="resolveMediaUrl(img.url) ?? undefined" :alt="`图片 ${i + 1}`" class="h-full w-full object-cover" />
+          <span
+            class="drag-handle absolute left-1 top-1 flex h-6 w-6 touch-none items-center justify-center rounded-full bg-white/90 text-xs text-mint-500 shadow"
+            title="拖动排序"
+          >
+            ⠿
+          </span>
+          <button
+            type="button"
+            class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-red-500 shadow"
+            @click="removeAt(i)"
+            title="删除"
+          >
+            ✕
+          </button>
+        </div>
+      </template>
+
+      <template #footer>
         <button
           type="button"
-          class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-red-500 shadow"
-          @click="removeAt(i)"
-          title="删除"
+          class="flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-mint-200 bg-mint-50/40 text-2xl text-mint-400 transition hover:border-mint-400 hover:text-mint-600 disabled:opacity-60"
+          :disabled="uploading"
+          @click="pickFiles"
         >
-          ✕
+          {{ uploading ? '…' : '+' }}
         </button>
-      </div>
-
-      <button
-        type="button"
-        class="flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-mint-200 bg-mint-50/40 text-2xl text-mint-400 transition hover:border-mint-400 hover:text-mint-600 disabled:opacity-60"
-        :disabled="uploading"
-        @click="pickFiles"
-      >
-        {{ uploading ? '…' : '+' }}
-      </button>
-    </div>
+      </template>
+    </draggable>
 
     <input
       ref="fileInput"
