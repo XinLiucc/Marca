@@ -1,9 +1,10 @@
 -- 问题题库种子数据
 -- 执行：mysql -u marca -p marca < seed.sql
--- 共 122 道：72 道通用基础题 + 35 道场景题 + 15 道节日题。其中 58 道带 tags（8 老题打标 + 50 新题）。
+-- 共 132 道：82 道通用基础题 + 35 道场景题 + 15 道节日题。其中 58 道带 tags（8 老题打标 + 50 新题）。
 -- 2026-07-24：场景题第二轮补充，morning/afternoon/monday/friday/weekend/spring/summer/autumn 各 +2（16 道）。
 -- 2026-07-24：通用题补充，PERMA(5)/叙事疗法(4)/SDT(3) 理论驱动，共 12 道，不带 tags（进通用池）。
 -- 2026-07-24：节日题补充，holiday 维度从 0 到 15 个节日各 1 道。
+-- 2026-07-28：通用题补充，CBT认知重构(4)/峰终定律(3)/成长型思维(3) 理论驱动，共 10 道，不带 tags（进通用池）。
 -- tags 维度：time (morning/afternoon/evening/late_night) · day (monday/friday/weekend...) · season (spring/summer/autumn/winter)
 
 SET NAMES utf8mb4;
@@ -198,3 +199,19 @@ INSERT INTO question (category, content, tags) VALUES
 ('emotion', '这个团圆的日子，有没有谁不在身边？', JSON_OBJECT('holiday', JSON_ARRAY('lantern_festival'))),
 ('event',   '今天有没有吃到一口让你想起某个人的味道？', JSON_OBJECT('holiday', JSON_ARRAY('dragon_boat_festival'))),
 ('emotion', '今晚的月亮，你是跟谁一起看的？', JSON_OBJECT('holiday', JSON_ARRAY('mid_autumn_festival')));
+
+-- ========== 通用题：CBT认知重构 / 峰终定律 / 成长型思维（10 道，2026-07-28） ==========
+INSERT INTO question (category, content) VALUES
+-- CBT 认知重构 x4（捕捉负面念头 / 换个角度看）
+('emotion', '今天有没有一个念头让你不舒服？如果是朋友遇到同样的事，你会怎么劝他？'),
+('emotion', '今天有没有把一件小事，在脑子里越想越糟糕？后来呢？'),
+('future',  '今天让你烦心的事，如果放到一年后再看，还会这么重要吗？'),
+('emotion', '今天有没有一个"应该"，其实是你对自己太苛刻了？'),
+-- 峰终定律 x3（最强瞬间 / 结束时刻）
+('event',   '今天印象最深的一个瞬间是什么？'),
+('emotion', '今天最后清醒的念头，是什么？'),
+('event',   '如果今天只能留下一个画面，你会留哪个？'),
+-- 成长型思维 x3（把"卡壳"重新框定为学习）
+('future',  '今天遇到的一个卡壳，教会了你什么？'),
+('future',  '今天有没有一件事，做得不够好，但你愿意再试一次？'),
+('emotion', '今天有没有把"我不会"换成"我还不会"的时刻？');
