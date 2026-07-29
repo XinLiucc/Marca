@@ -1,5 +1,6 @@
 package app.marca.controller;
 
+import app.marca.dto.ChangePasswordRequest;
 import app.marca.dto.LoginRequest;
 import app.marca.dto.LoginResponse;
 import app.marca.dto.RegisterRequest;
@@ -46,5 +47,12 @@ public class AuthController {
     public UserResponse updateMe(@AuthenticationPrincipal UserPrincipal principal,
                                  @Valid @RequestBody UpdateProfileRequest req) {
         return UserResponse.from(authService.updateNickname(principal.id(), req.getNickname()));
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal UserPrincipal principal,
+                                                @Valid @RequestBody ChangePasswordRequest req) {
+        authService.changePassword(principal.id(), req.getOldPassword(), req.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 }
