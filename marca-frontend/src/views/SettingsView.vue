@@ -16,6 +16,14 @@ const draft = ref('')
 const saving = ref(false)
 const saveError = ref('')
 
+const changingPassword = ref(false)
+const oldPwd = ref('')
+const newPwd = ref('')
+const confirmPwd = ref('')
+const pwdSaving = ref(false)
+const pwdError = ref('')
+const pwdSuccessMsg = ref('')
+
 function formatCreatedAt(dt: string): string {
   // 后端返回 "2026-06-25T15:52:41"，直接拆字符串，避免时区换算
   const [y, m, d] = dt.slice(0, 10).split('-')
@@ -65,6 +73,47 @@ async function saveNickname() {
     saveError.value = '保存失败，请稍后重试'
   } finally {
     saving.value = false
+  }
+}
+
+function startChangePassword() {
+  oldPwd.value = ''
+  newPwd.value = ''
+  confirmPwd.value = ''
+  pwdError.value = ''
+  pwdSuccessMsg.value = ''
+  changingPassword.value = true
+}
+
+function cancelChangePassword() {
+  changingPassword.value = false
+  pwdError.value = ''
+}
+
+async function submitChangePassword() {
+  if (!oldPwd.value) {
+    pwdError.value = '请输入旧密码'
+    return
+  }
+  if (newPwd.value.length < 6 || newPwd.value.length > 64) {
+    pwdError.value = '新密码长度需在 6~64 之间'
+    return
+  }
+  if (newPwd.value !== confirmPwd.value) {
+    pwdError.value = '两次输入的新密码不一致'
+    return
+  }
+  pwdSaving.value = true
+  pwdError.value = ''
+  try {
+    await authApi.changePassword(oldPwd.value, newPwd.value)
+    changingPassword.value = false
+    pwdSuccessMsg.value = '密码修改成功'
+  } catch (err) {
+    const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+    pwdError.value = code === 'OLD_PASSWORD_INCORRECT' ? '旧密码错误' : '修改失败，请稍后重试'
+  } finally {
+    pwdSaving.value = false
   }
 }
 
@@ -151,6 +200,63 @@ onMounted(load)
           <div class="flex items-center justify-between">
             <span class="text-gray-500">开始记录于</span>
             <span class="text-gray-800">{{ formatCreatedAt(user.createdAt) }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 修改密码 -->
+      <section class="mb-6 rounded-3xl bg-white p-6">
+        <h2 class="mb-4 text-sm font-medium text-gray-400">修改密码</h2>
+
+        <div v-if="!changingPassword">
+          <button
+            class="rounded-full px-3 py-1 text-xs text-mint-600 hover:bg-mint-50"
+            @click="startChangePassword"
+          >
+            修改密码
+          </button>
+          <p v-if="pwdSuccessMsg" class="mt-2 text-xs text-mint-600">{{ pwdSuccessMsg }}</p>
+        </div>
+
+        <div v-else class="space-y-3">
+          <input
+            v-model="oldPwd"
+            type="password"
+            placeholder="旧密码"
+            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-mint-400 focus:outline-none"
+            :disabled="pwdSaving"
+          />
+          <input
+            v-model="newPwd"
+            type="password"
+            placeholder="新密码（6~64 位）"
+            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-mint-400 focus:outline-none"
+            :disabled="pwdSaving"
+          />
+          <input
+            v-model="confirmPwd"
+            type="password"
+            placeholder="确认新密码"
+            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-mint-400 focus:outline-none"
+            :disabled="pwdSaving"
+            @keyup.enter="submitChangePassword"
+          />
+          <p v-if="pwdError" class="text-xs text-red-500">{{ pwdError }}</p>
+          <div class="flex justify-end gap-2">
+            <button
+              class="rounded-full px-3 py-1 text-xs text-gray-400 hover:bg-gray-50"
+              :disabled="pwdSaving"
+              @click="cancelChangePassword"
+            >
+              取消
+            </button>
+            <button
+              class="rounded-full px-3 py-1 text-xs text-mint-600 hover:bg-mint-50 disabled:opacity-50"
+              :disabled="pwdSaving"
+              @click="submitChangePassword"
+            >
+              {{ pwdSaving ? '保存中…' : '保存' }}
+            </button>
           </div>
         </div>
       </section>

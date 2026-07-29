@@ -36,4 +36,7 @@ export const authApi = {
   updateProfile(nickname: string) {
     return http.patch<UserResponse>('/api/auth/me', { nickname }).then((r) => r.data)
   },
+  changePassword(oldPassword: string, newPassword: string) {
+    return http.patch('/api/auth/me/password', { oldPassword, newPassword }).then((r) => r.data)
+  },
 }

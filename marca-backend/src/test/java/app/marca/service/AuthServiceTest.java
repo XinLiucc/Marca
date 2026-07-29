@@ -165,4 +165,38 @@ class AuthServiceTest {
         assertEquals("token-123", resp.getToken());
         assertEquals("A", resp.getNickname());
     }
+
+    // ---------- changePassword ----------
+
+    @Test
+    void changePassword_userNotFound_throwsNotFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> authService.changePassword(1L, "old", "newpass"));
+        assertEquals("USER_NOT_FOUND", ex.getCode());
+    }
+
+    @Test
+    void changePassword_wrongOldPassword_throwsOldPasswordIncorrect() {
+        User user = User.builder().id(1L).email("a@b.com").password("hashed").nickname("A").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> authService.changePassword(1L, "wrong", "newpass"));
+        assertEquals("OLD_PASSWORD_INCORRECT", ex.getCode());
+    }
+
+    @Test
+    void changePassword_success_updatesEncodedPassword() {
+        User user = User.builder().id(1L).email("a@b.com").password("hashed").nickname("A").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old", "hashed")).thenReturn(true);
+        when(passwordEncoder.encode("newpass")).thenReturn("new-hashed");
+
+        authService.changePassword(1L, "old", "newpass");
+
+        assertEquals("new-hashed", user.getPassword());
+    }
 }
