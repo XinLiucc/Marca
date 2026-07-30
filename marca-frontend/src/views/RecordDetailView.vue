@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { recordsApi, type RecordDto } from '@/api/records'
@@ -121,7 +121,39 @@ async function confirmDelete() {
   }
 }
 
-onMounted(() => load(props.date))
+// 大图预览（灯罩）：点缩略图不再跳新标签页看裸图，应用内查看 + 左右切换
+const lightboxIndex = ref<number | null>(null)
+
+function openLightbox(i: number) {
+  lightboxIndex.value = i
+}
+
+function closeLightbox() {
+  lightboxIndex.value = null
+}
+
+function showPrevImage() {
+  if (lightboxIndex.value === null || !record.value) return
+  lightboxIndex.value = (lightboxIndex.value - 1 + record.value.images.length) % record.value.images.length
+}
+
+function showNextImage() {
+  if (lightboxIndex.value === null || !record.value) return
+  lightboxIndex.value = (lightboxIndex.value + 1) % record.value.images.length
+}
+
+function onLightboxKeydown(e: KeyboardEvent) {
+  if (lightboxIndex.value === null) return
+  if (e.key === 'Escape') closeLightbox()
+  else if (e.key === 'ArrowLeft') showPrevImage()
+  else if (e.key === 'ArrowRight') showNextImage()
+}
+
+onMounted(() => {
+  load(props.date)
+  window.addEventListener('keydown', onLightboxKeydown)
+})
+onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown))
 watch(() => props.date, (d) => load(d))
 </script>
 
@@ -250,16 +282,15 @@ watch(() => props.date, (d) => load(d))
           <span class="rounded-full bg-mint-100 px-2 py-0.5">图片</span>
         </header>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <a
-            v-for="img in record.images"
+          <button
+            v-for="(img, i) in record.images"
             :key="img.id ?? img.url"
-            :href="resolveMediaUrl(img.url) ?? undefined"
-            target="_blank"
-            rel="noopener"
+            type="button"
             class="block aspect-square overflow-hidden rounded-2xl bg-mint-50"
+            @click="openLightbox(i)"
           >
             <img :src="resolveMediaUrl(img.url) ?? undefined" class="h-full w-full object-cover" />
-          </a>
+          </button>
         </div>
       </section>
 
@@ -321,4 +352,37 @@ watch(() => props.date, (d) => load(d))
       <p v-if="errorMsg" class="mt-3 text-center text-xs text-red-500">{{ errorMsg }}</p>
     </template>
   </main>
+
+  <!-- 图片灯罩：应用内查看大图，不再跳出去看裸图 -->
+  <div
+    v-if="record && lightboxIndex !== null"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+    @click="closeLightbox"
+  >
+    <button
+      class="absolute right-4 top-4 rounded-full p-2 text-2xl text-white/80 transition hover:text-white"
+      @click.stop="closeLightbox"
+    >
+      ✕
+    </button>
+    <button
+      v-if="record.images.length > 1"
+      class="absolute left-2 rounded-full p-3 text-2xl text-white/70 transition hover:text-white sm:left-4"
+      @click.stop="showPrevImage"
+    >
+      ‹
+    </button>
+    <img
+      :src="resolveMediaUrl(record.images[lightboxIndex].url) ?? undefined"
+      class="max-h-full max-w-full rounded-lg object-contain"
+      @click.stop
+    />
+    <button
+      v-if="record.images.length > 1"
+      class="absolute right-2 rounded-full p-3 text-2xl text-white/70 transition hover:text-white sm:right-4"
+      @click.stop="showNextImage"
+    >
+      ›
+    </button>
+  </div>
 </template>
