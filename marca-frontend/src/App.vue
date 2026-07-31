@@ -35,6 +35,12 @@ function cancelExit() {
 </script>
 
 <template>
+  <div class="pointer-events-none fixed inset-0 -z-10 hidden overflow-hidden lg:block" aria-hidden="true">
+    <div class="absolute -left-24 -top-24 h-[26rem] w-[26rem] rounded-full bg-mint-300/60 blur-2xl"></div>
+    <div class="absolute -right-32 top-1/4 h-[32rem] w-[32rem] rounded-full bg-mint-400/40 blur-2xl"></div>
+    <div class="absolute -bottom-32 left-1/4 h-96 w-96 rounded-full bg-mint-200/70 blur-2xl"></div>
+  </div>
+
   <RouterView />
 
   <div
