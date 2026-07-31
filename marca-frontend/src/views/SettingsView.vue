@@ -206,7 +206,7 @@ onMounted(load)
 
       <!-- 修改密码 -->
       <section class="mb-6 rounded-3xl bg-white p-6">
-        <h2 class="mb-4 text-sm font-medium text-gray-400">修改密码</h2>
+        <h2 class="mb-4 text-sm font-medium text-gray-400">账号安全</h2>
 
         <div v-if="!changingPassword">
           <button
