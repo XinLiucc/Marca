@@ -373,7 +373,7 @@ watch(() => props.date, (d) => load(d))
       ‹
     </button>
     <img
-      :src="resolveMediaUrl(record.images[lightboxIndex].url) ?? undefined"
+      :src="resolveMediaUrl(record.images[lightboxIndex]?.url) ?? undefined"
       class="max-h-full max-w-full rounded-lg object-contain"
       @click.stop
     />

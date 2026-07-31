@@ -23,6 +23,9 @@ const confirmPwd = ref('')
 const pwdSaving = ref(false)
 const pwdError = ref('')
 const pwdSuccessMsg = ref('')
+const showOldPwd = ref(false)
+const showNewPwd = ref(false)
+const showConfirmPwd = ref(false)
 
 function formatCreatedAt(dt: string): string {
   // 后端返回 "2026-06-25T15:52:41"，直接拆字符串，避免时区换算
@@ -82,6 +85,9 @@ function startChangePassword() {
   confirmPwd.value = ''
   pwdError.value = ''
   pwdSuccessMsg.value = ''
+  showOldPwd.value = false
+  showNewPwd.value = false
+  showConfirmPwd.value = false
   changingPassword.value = true
 }
 
@@ -206,7 +212,7 @@ onMounted(load)
 
       <!-- 修改密码 -->
       <section class="mb-6 rounded-3xl bg-white p-6">
-        <h2 class="mb-4 text-sm font-medium text-gray-400">修改密码</h2>
+        <h2 class="mb-4 text-sm font-medium text-gray-400">账号安全</h2>
 
         <div v-if="!changingPassword">
           <button
@@ -219,28 +225,58 @@ onMounted(load)
         </div>
 
         <div v-else class="space-y-3">
-          <input
-            v-model="oldPwd"
-            type="password"
-            placeholder="旧密码"
-            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-mint-400 focus:outline-none"
-            :disabled="pwdSaving"
-          />
-          <input
-            v-model="newPwd"
-            type="password"
-            placeholder="新密码（6~64 位）"
-            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-mint-400 focus:outline-none"
-            :disabled="pwdSaving"
-          />
-          <input
-            v-model="confirmPwd"
-            type="password"
-            placeholder="确认新密码"
-            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-mint-400 focus:outline-none"
-            :disabled="pwdSaving"
-            @keyup.enter="submitChangePassword"
-          />
+          <div class="relative">
+            <input
+              v-model="oldPwd"
+              :type="showOldPwd ? 'text' : 'password'"
+              placeholder="旧密码"
+              class="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm focus:border-mint-400 focus:outline-none"
+              :disabled="pwdSaving"
+            />
+            <button
+              type="button"
+              tabindex="-1"
+              class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-400 hover:text-gray-600"
+              @click="showOldPwd = !showOldPwd"
+            >
+              {{ showOldPwd ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <div class="relative">
+            <input
+              v-model="newPwd"
+              :type="showNewPwd ? 'text' : 'password'"
+              placeholder="新密码（6~64 位）"
+              class="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm focus:border-mint-400 focus:outline-none"
+              :disabled="pwdSaving"
+            />
+            <button
+              type="button"
+              tabindex="-1"
+              class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-400 hover:text-gray-600"
+              @click="showNewPwd = !showNewPwd"
+            >
+              {{ showNewPwd ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <div class="relative">
+            <input
+              v-model="confirmPwd"
+              :type="showConfirmPwd ? 'text' : 'password'"
+              placeholder="确认新密码"
+              class="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 text-sm focus:border-mint-400 focus:outline-none"
+              :disabled="pwdSaving"
+              @keyup.enter="submitChangePassword"
+            />
+            <button
+              type="button"
+              tabindex="-1"
+              class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-400 hover:text-gray-600"
+              @click="showConfirmPwd = !showConfirmPwd"
+            >
+              {{ showConfirmPwd ? '🙈' : '👁️' }}
+            </button>
+          </div>
           <p v-if="pwdError" class="text-xs text-red-500">{{ pwdError }}</p>
           <div class="flex justify-end gap-2">
             <button
